@@ -6,6 +6,16 @@
 2. 测试6.828 内核的启动加载器（boot loader）
 3. 研究6.828 内核的初始化模板（JOS）
 
+## 实验题目
+
+### Exercise 1：阅读汇编语言资料
+阅读材料包括：
+1. [the 6.828 reference page](https://pdos.csail.mit.edu/6.828/2017/reference.html)给出的汇编语言资料
+2. [Brennan's Guide to Inline Assembly](http://www.delorie.com/djgpp/doc/brennan/brennan_att_inline_djgpp.html)
+
+### Exercise 2：使用GDB命令跟踪BIOS做了哪些事情
+
+
 ## 环境部署
 
 ### 安装编译工具链
@@ -24,12 +34,38 @@
 
 3. CS（CodeSegment）和IP（Instruction Pointer）寄存器一起用于确定下一条指令的地址。
 
+4. CLI：Clear Interupt，禁止中断发生。STL：Set Interupt，允许中断发生。CLI和STI是用来屏蔽中断和恢复中断用的，如设置栈基址SS和偏移地址SP时，需要CLI，因为如果这两条指令被分开了，那么很有可能SS被修改了，但由于中断，而代码跳去其它地方执行了，SP还没来得及修改，就有可能出错。
+
+5. CLD: Clear Director。STD：Set Director。在字行块传送时使用的，它们决定了块传送的方向。CLD使得传送方向从低地址到高地址，而STD则相反。
+
+6. 汇编语言中，CPU对外设的操作通过专门的端口读写指令来完成，读端口用IN指令，写端口用OUT指令。
+
+7. LIDT: 加载中断描述符。LGDT：加载全局描述符。
+
 ### 模拟x86
 
 1. make命令
     * `make`：编译最小的6.828启动加载器和内核
     * `make qemu`：运行QEMU。控制台输出会同时打印在QEMU虚拟VGA显示和虚拟PC的虚拟串口
     * `make qemu-nox`：运行QEMU。控制台输出只会打印在虚拟串口
+
+### PC物理地址空间
+
+1. 早期基于8088处理器的PC只支持1MB的物理地址寻址
+    * 0x00000000 ~ 0x000A0000：640KB，Low Memory，早期PC能够使用的RAM地址。
+    * 0x000A0000 ~ 0x000FFFFF：384KB，预留给硬件使用，比如视频显示缓存、存储固件等。
+        * 0x000A0000 ~ 0x000C0000: 128KB，VGA显示
+        * 0x000C0000 ~ 0x000F0000: 192KB，16-bit devices, expansion ROMs
+        * 0x000F0000 ~ 0x00100000: 64KB，BIOS RAM
+
+2. 后来80286和80386处理器出现，能够支持16MB乃至4GB的物理地址空间，但仍然预留最低的1MB物理地址空间，以便后向兼容已有软件。因此现代PC在0x000A0000和0x00100000这段内存空间中存在hole，把RAM划分成“low memory”（或“conventional memory”，最低的640KB内存）和“extend memory”（其他内存）两部分。
+
+### The ROM BIOS
+
+1. 第一条指令：`[f000:fff0] 0xffff0:    ljmp   $0xf000,$0xe05b`
+    * PC开始运行时，CS = 0xf000，IP = 0xfff0，对应物理地址为0xffff0。（计算公式： physical address = 16 * segment + offset）
+    * 第一条指令做了jmp操作，跳到物理地址为0xfe05b的位置。
+
 
 ## 问题汇总
 
