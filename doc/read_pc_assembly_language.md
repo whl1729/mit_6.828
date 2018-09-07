@@ -105,7 +105,41 @@ paragraph   | 16 bytes
 
 1. 使用NASM编译汇编程序
 ```
-nasm -f elf64 hello.asm
-gcc -o hello hello.o // use -no-pie option if there is error "relocation R_X86_64_32S against `.text' can not be used when making a PIE object; recompile with -fPIC"
+nasm -f elf hello.asm
+gcc -o hello hello.o 
 ```
+
+2. 解决编译错误
+    * "error: instruction not supported in 64-bit mode"的解决方法：nasm的格式选项改用elf代替elf64，gcc选项增加`-m32`
+    * "relocation R_X86_64_32S against '.text' can not be used when making a PIE object; recompile with -fPIC"的解决方法：gcc选项增加`-no-pie`
+    * "undefined reference to '\_printf'"的解决方法：使用nasm编译asm_io.asm时，增加`-d ELF_TYPE`选项。
+
+3. 段
+    * 已初始化的数据存储在`.data`段
+    * 未初始化的数据存储在`.bss`段
+    * 代码存储在`.text`段
+
+4. `global`：汇编语言的label默认拥有internal scope，这意味着只有同一个模块的代码可以使用此label。globel指令使label拥有external scope，使得程序中任意模块都可使用此label。
+
+5. `enter`指令创建一个栈帧，`leave`指令销毁一个栈帧。`enter`指令的第一个参数用来指示需要为局部变量申请的内存大小。`enter`和`leave`指令的等价代码如下所示：
+```
+; enter
+push ebp
+mov esp, ebp
+sub firstPram, esp
+; leave
+mov esp, ebp
+pop ebp
+```
+
+6. windows的目标文件是coff（Common Object File Format）格式的，linux的目标文件是elf（Executable and Linkable Format）格式。
+
+7. `-l listing-file`选项可以让nasm生成一个包含汇编信息的list文件。该文件第2列是数据或代码在段中的偏移，注意这个偏移值不一定是最终形成整个程序时的真实偏移值，因为不同模块都可能在数据段定义了自己的label，在链接阶段，所有数据段的label定义汇总在一个数据段里，这时链接器需要重新计算各个label 的偏移。
+
+8. 大小端
+    * IBM框架、大部分RISC处理器和摩托罗拉处理器都是大端序，而Intel处理器是小端序。
+    * 需要关注字节序的场景：
+        * 当字节数据在不同主机间传输时
+        * 当字节数据作为多字节整数写到内存，然后逐个字节读取时（或者相反）
+    * 字节序对数组元素的顺序不影响，数组的第一个元素永远在最小的地址。但字节序对数组的每个单独元素还是会有影响（比如元素是多字节的整数时）。
 
