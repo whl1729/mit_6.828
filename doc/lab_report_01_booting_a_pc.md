@@ -13,6 +13,10 @@
 1. [the 6.828 reference page](https://pdos.csail.mit.edu/6.828/2017/reference.html)给出的汇编语言资料
 2. [Brennan's Guide to Inline Assembly](http://www.delorie.com/djgpp/doc/brennan/brennan_att_inline_djgpp.html)
 
+完成情况：
+1. 读完《PC Assembly Language》，并输出[学习笔记](read_pc_assembly_language.md)。
+2. 读完《Brennan's Guide to Inline Assembly》，并输出[学习笔记](read_brennans_guide_to_inline_assembly.md)。
+
 ### Exercise 2：使用GDB命令跟踪BIOS做了哪些事情
 
 
