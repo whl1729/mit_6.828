@@ -1,4 +1,4 @@
-# 《Lab1: Booting a PC》实验报告
+# 《MIT 6.828 Lab1: Booting a PC》实验报告
 
 ## 实验内容
 
@@ -9,8 +9,6 @@
 ## 实验题目
 
 ### Exercise 1：阅读汇编语言资料
-
-#### 问题
 
 > Exercise 1. Familiarize yourself with the assembly language materials available on the [6.828 reference page](https://pdos.csail.mit.edu/6.828/2017/reference.html). You don't have to read them now, but you'll almost certainly want to refer to some of this material when reading and writing x86 assembly.
 
@@ -28,8 +26,6 @@
 2. NASM汇编器使用Intel语法，而GNU汇编器使用AT&T语法。两者的语法差异可以参考[Brennan's Guide to Inline Assembly](http://www.delorie.com/djgpp/doc/brennan/brennan_att_inline_djgpp.html)。
 
 ### Exercise 2：使用GDB命令跟踪BIOS做了哪些事情
-
-#### 问题
 
 > Exercise 2. Use GDB's si (Step Instruction) command to trace into the ROM BIOS for a few more instructions, and try to guess what it might be doing. You might want to look at [Phil Storrs I/O Ports Description](http://web.archive.org/web/20040404164813/members.iweb.net.au/~pstorr/pcbook/book2/book2.htm), as well as other materials on the [6.828 reference materials page](https://pdos.csail.mit.edu/6.828/2017/reference.html). No need to figure out all the details - just the general idea of what the BIOS is doing first.
 

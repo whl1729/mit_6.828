@@ -25,3 +25,17 @@ The labs are split into 6 major parts that build on each other, culminating in a
 4. Preemptive multitasking
 5. File system, spawn, and shell
 6. Network driver
+
+## 笔记分类
+关于这门课程的学习笔记，我打算划分为以下3类：
+1. lab: 6个lab的实验报告
+2. homework: 课后作业的解题报告
+3. lecture: 课程阅读材料的笔记
+
+## 参考资料
+
+1. [资源向导之 JOS 计划 MIT 6.828（JasonLeaster）](https://blog.csdn.net/cinmyheart/article/details/45150461)
+
+2. [MIT 6.828 JOS 操作系统学习笔记（fatsheep9146）](http://www.cnblogs.com/fatsheep9146/category/769143.html)
+
+3. [推荐一门课：6.828（朱佳顺）](http://lifeofzjs.com/blog/2016/02/24/recommmend-6-dot-828/)
