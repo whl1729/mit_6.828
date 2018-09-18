@@ -79,6 +79,24 @@
     * CR0的位0是PE（Protection Enable）标志。当设置该位时即开启了保护模式；当复位时即进入实地址模式。这个标志仅开启段级保护，而并没有启用分页机制。若要启用分页机制，那么PE和PG标志都要置位。
     * CR0的位31是PG（Paging，分页）标志。当设置该位时即开启了分页机制；当复位时则禁止分页机制，此时所有线性地址等同于物理地址。在开启这个标志之前必须已经或者同时开启PE标志。即若要启用分页机制，那么PE和PG标志都要置位。
 
+### Exercise 3: 使用GDB命令跟踪boot loader做了哪些事情
+
+> Take a look at the [lab tools guide](https://pdos.csail.mit.edu/6.828/2017/labguide.html), especially the section on GDB commands. Even if you're familiar with GDB, this includes some esoteric GDB commands that are useful for OS work.
+
+> Set a breakpoint at address 0x7c00, which is where the boot sector will be loaded. Continue execution until that breakpoint. Trace through the code in boot/boot.S, using the source code and the disassembly file obj/boot/boot.asm to keep track of where you are. Also use the x/i command in GDB to disassemble sequences of instructions in the boot loader, and compare the original boot loader source code with both the disassembly in obj/boot/boot.asm and GDB.
+
+> Trace into bootmain() in boot/main.c, and then into readsect(). Identify the exact assembly instructions that correspond to each of the statements in readsect(). Trace through the rest of readsect() and back out into bootmain(), and identify the begin and end of the for loop that reads the remaining sectors of the kernel from the disk. Find out what code will run when the loop is finished, set a breakpoint there, and continue to that breakpoint. Then step through the remainder of the boot loader.
+
+> Be able to answer the following questions:
+* At what point does the processor start executing 32-bit code? What exactly causes the switch from 16- to 32-bit mode?
+* What is the last instruction of the boot loader executed, and what is the first instruction of the kernel it just loaded?
+* Where is the first instruction of the kernel?
+* How does the boot loader decide how many sectors it must read in order to fetch the entire kernel from disk? Where does it find this information?
+
+#### 解答
+
+1. Exercise 3首先让我们阅读GDB命令相关材料。我的阅读笔记见[]()。
+
 ## 实验笔记
 
 ### 环境部署

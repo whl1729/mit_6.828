@@ -1,5 +1,7 @@
 # 《PC Assembly Language》读书笔记
 
+本书下载地址：[pcasm-book](https://pdos.csail.mit.edu/6.828/2017/readings/pcasm-book.pdf)。
+
 ## 前言
 
 1. 8086处理器只支持实模式（real mode），不能满足安全、多任务等需求。
