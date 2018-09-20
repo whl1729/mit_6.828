@@ -38,6 +38,8 @@ JOS GNUmakefile提供多个targets来支持多种方式运行JOS，所有这些t
 * `si (or stepi)`: 执行一条机器指令
 * `b function or b file:line (or breakpoint)`: 在指定函数或代码行设置一个断点
 * `b *addr (or breakpoint)`: 在指定内存地址设置断点
+* `info breakpoints`: 打印所有设置的断点信息
+* `delete b_id1, b_id2`：删除指定编号的断点
 * `set print pretty`: 将数组和结构体的打印格式设置得更pretty
 * `info registers`: 打印通用寄存器、eip、eflags和segment selector的值
 * `x/Nx addr`: 以16进制格式打印起始地址为addr的N个word.

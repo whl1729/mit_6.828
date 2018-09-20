@@ -17,6 +17,12 @@ AT&T: mov %eax, %ebx
 Intel: mov ebx, eax 
 ```
 
+* 比较命令的书写顺序：比较命令实际上是两数相减看结果的正负性。AT&T先写减数再写被减数，Intel先写被减数再写减数。比如比较eax和ebx寄存器的大小：
+```
+AT&T:  cmp %ebx, %eax
+Intel: cmp eax, ebx
+```
+
 * 常量/立即数格式：AT&T需要在常量或立即数前加"$"，而Intel直呼其名。比如将C语言变量booga的地址加载到eax寄存器：
 ```
 AT&T:  movl $_booga, %eax
