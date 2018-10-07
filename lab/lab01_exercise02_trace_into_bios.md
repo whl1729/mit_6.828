@@ -1,5 +1,7 @@
 # 《MIT 6.828 Lab 1 Exercise 2》实验报告
 
+本实验链接：[mit 6.828 lab1 Exercise2](https://pdos.csail.mit.edu/6.828/2017/labs/lab1/#Exercise-2)。
+
 ## 题目
 
 > Exercise 2. Use GDB's si (Step Instruction) command to trace into the ROM BIOS for a few more instructions, and try to guess what it might be doing. You might want to look at [Phil Storrs I/O Ports Description](http://web.archive.org/web/20040404164813/members.iweb.net.au/~pstorr/pcbook/book2/book2.htm), as well as other materials on the [6.828 reference materials page](https://pdos.csail.mit.edu/6.828/2017/reference.html). No need to figure out all the details - just the general idea of what the BIOS is doing first.

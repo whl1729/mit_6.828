@@ -1,5 +1,7 @@
 # 《MIT 6.828 Lab 1 Exercise 3》实验报告
 
+本实验链接：[mit 6.828 lab1 Exercise 3](https://pdos.csail.mit.edu/6.828/2017/labs/lab1/#Exercise-3)。
+
 ## 题目
 
 > Exercise 3. Take a look at the [lab tools guide](https://pdos.csail.mit.edu/6.828/2017/labguide.html), especially the section on GDB commands. Even if you're familiar with GDB, this includes some esoteric GDB commands that are useful for OS work.
@@ -63,9 +65,13 @@ Exercise 3包含两部分：其一是使用GDB分析代码，其二是回答4个
 ```
 1. 在地址0x7c00处设置断点，这是boot loader第一条指令的位置。
 
-2. 使用si命令跟踪代码，可见`boot.S`文件中主要做了以下事情：初始化段寄存器、打开A20门、从实模式跳到虚模式（需要设置LGT和cr0寄存器），最后调用bootmain函数。
-    * seta20.1和seta20.2两段代码实现打开A20门的功能，其中seta20.1是向键盘控制器的0x64端口发送0x61命令，这个命令的意思是要向键盘控制器的 P2 写入数据；seta20.2是向键盘控制器的 P2 端口写数据了。写数据的方法是把数据通过键盘控制器的 0x60 端口写进去。写入的数据是 0xdf，因为 A20 gate 就包含在键盘控制器的 P2 端口中，随着 0xdf 的写入，A20 gate 就被打开了。详见[【学习xv6】从实模式到保护模式](http://leenjewel.github.io/blog/2014/07/29/%5B%28xue-xi-xv6%29%5D-cong-shi-mo-shi-dao-bao-hu-mo-shi/)。
-    * 关于LGT和cr0寄存器的解释同样可参考[【学习xv6】从实模式到保护模式](http://leenjewel.github.io/blog/2014/07/29/%5B%28xue-xi-xv6%29%5D-cong-shi-mo-shi-dao-bao-hu-mo-shi/)。。
+2. 使用si命令跟踪代码，可见`boot.S`文件中主要做了以下事情：初始化段寄存器、打开A20门、从实模式跳到虚模式（需要设置GDT和cr0寄存器），最后调用bootmain函数。
+    * seta20.1和seta20.2两段代码实现打开A20门的功能，其中seta20.1是向键盘控制器的0x64端口发送0x61命令，这个命令的意思是要向键盘控制器的 P2 写入数据；seta20.2是向键盘控制器的 P2 端口写数据了。写数据的方法是把数据通过键盘控制器的 0x60 端口写进去。写入的数据是 0xdf，因为 A20 gate 就包含在键盘控制器的 P2 端口中，随着 0xdf 的写入，A20 gate 就被打开了。
+    * test对两个参数(目标，源)执行AND逻辑操作，并根据结果设置标志寄存器，结果本身不会保存。
+    * GDT是全局描述符表，GDTR是全局描述符表寄存器。想要在“保护模式”下对内存进行寻址就先要有 GDT，GDT表里每一项叫做“段描述符”，用来记录每个内存分段的一些属性信息，每个段描述符占8字节。CPU使用GDTR寄存器来保存我们GDT在内存中的位置和GDT的长度。`lgdt gdtdesc`将源操作数的值（存储在gdtdesc地址中）加载到全局描述符表寄存器中。
+    * x86一共有4个控制寄存器，分别为CR0～CR3，而控制进入“保护模式”的开关在CR0上，CR0上和保护模式有关的位是PE（标识是否开启保护模式）和PG（标识是否启用分页式）。
+    * 关于A20门、GDT和cr0寄存器的详细介绍可以参考[【学习xv6】从实模式到保护模式](http://leenjewel.github.io/blog/2014/07/29/%5B%28xue-xi-xv6%29%5D-cong-shi-mo-shi-dao-bao-hu-mo-shi/)。。
+    * `.byte`在当前位置插入一个字节；`.word`在当前位置插入一个字。
 
 3. 题目中还要求我们比较`boot.S`，`boot.asm`与GDB的代码差异。我观察到的差异有： `boot.S`的指令含有表示长度的b,w,l等后缀，而`boot.asm`和GDB没有；同样一条指令，`boot.S`和GDB是操作ax寄存器，而`boot.asm`却是操作%eax。
 ```
@@ -73,6 +79,13 @@ Exercise 3包含两部分：其一是使用GDB分析代码，其二是回答4个
     xor %eax, %eax  // boot.asm
     xor %ax, %ax    // GDB
 ```
+
+4. 一个操作系统在计算机启动后到底应该做些什么：（摘自参考文献1《【学习xv6】从实模式到保护模式》）
+    * 计算机开机，运行环境为 1MB 寻址限制带“卷绕”机制
+    * 打开 A20 gate 让计算机突破 1MB 寻址限制
+    * 在内存中建立 GDT 全局描述符表，并将建立好的 GDT 表的位置和大小告诉 CPU
+    * 设置控制寄存器，进入保护模式
+    * 按照保护模式的内存寻址方式继续执行
 
 #### 分析`boot/main.c`的代码
 
@@ -88,9 +101,10 @@ Exercise 3包含两部分：其一是使用GDB分析代码，其二是回答4个
     7d4f:	01 de                	add    %ebx,%esi
 ```
 
-2. 接下来分析readsect函数。这个函数主要做了三件事情：等待磁盘（waitdisk）、输出数据到端口（out）、读取端口数据（insl）。
-    * 等待磁盘。waitdisk的函数实现如下所示。它其实就做一件事情：不断地读端口0x1fc的bit_7和bit_6的值，直到bit_7=0和bit_6=1.
+2. 接下来分析readsect函数。这个函数主要做了三件事情：等待磁盘（waitdisk）、输出扇区数目及地址信息到端口（out）、读取扇区数据（insl）。
+    * 等待磁盘。waitdisk的函数实现如下所示。它其实就做一件事情：不断地读端口0x1fc的bit_7和bit_6的值，直到bit_7=0和bit_6=1.结合参考文献1可知，端口1F7在被读的时候是作为状态寄存器使用，其中bit_7=0表示控制器空闲，bit_6=1表示驱动器就绪。因此，waitdisk在控制器空闲和驱动器就绪同时成立时才会结束等待。`
 ```
+    // waitdisk:
     7c6a:	55                   	push   %ebp
     7c6b:	ba f7 01 00 00       	mov    $0x1f7,%edx
     7c70:	89 e5                	mov    %esp,%ebp
@@ -99,9 +113,9 @@ Exercise 3包含两部分：其一是使用GDB分析代码，其二是回答4个
     7c76:	3c 40                	cmp    $0x40,%al
     7c78:	75 f8                	jne    7c72 <waitdisk+0x8>
 ```
-
-    * 输出数据到端口。
+    * 输出数据到端口。根据参考文献1的介绍，IDE定义了8个寄存器来操作硬盘。PC 体系结构将第一个硬盘控制器映射到端口 1F0-1F7 处，而第二个硬盘控制器则被映射到端口 170-177 处。out函数主要是是把扇区计数、扇区LBA地址等信息输出到端口1F2-1F6，然后将0x20命令写到1F7，表示要进行读扇区的操作。
 ```
+    // out:
     7c7c:	55                   	push   %ebp
     7c7d:	89 e5                	mov    %esp,%ebp
     7c7f:	57                   	push   %edi
@@ -130,6 +144,10 @@ Exercise 3包含两部分：其一是使用GDB分析代码，其二是回答4个
     7cc1:	b0 20                	mov    $0x20,%al
     7cc3:	ee                   	out    %al,(%dx)
     7cc4:	e8 a1 ff ff ff       	call   7c6a <waitdisk>
+```
+    * 读取扇区数据。主要用到insl函数，其实现是一个内联汇编语句。这个[stackflow网站](https://stackoverflow.com/questions/38410829/why-cant-find-the-insl-instruction-in-x86-document)解释了insl函数的作用：“That function will read cnt dwords from the input port specified by port into the supplied output array addr.”。关于内联汇编的介绍见[Brennan's Guide to Inline Assembly](http://www.delorie.com/djgpp/doc/brennan/brennan_att_inline_djgpp.html)和[GCC内联汇编基础](https://www.jianshu.com/p/1782e14a0766)。insl函数实质上就是从0x1F0端口连续读128个dword（即512个字节，也就是一个扇区的字节数）到目的地址。其中，0x1F0是数据寄存器，读写硬盘数据都必须通过这个寄存器。
+```
+    // insl:
     7cc9:	8b 7d 08             	mov    0x8(%ebp),%edi
     7ccc:	b9 80 00 00 00       	mov    $0x80,%ecx
     7cd1:	ba f0 01 00 00       	mov    $0x1f0,%edx
@@ -193,7 +211,7 @@ i386_init () at kern/init.c:24
 ### 二、回答问题
 
 1. 问：处理器从哪里开始执行32位代码？是什么导致了16位代码到32位代码的切换？ 答：
-    * 处理器应该是从`boot.S`文件中的`.code32`伪指令开始执行32位代码。
+    * 处理器应该是从`boot.S`文件中的`.code32`伪指令开始执行32位代码。补充：ljmp语句使得处理器从real mode切换到protected mode，地址长度从16位变为32位。
     ```
       ljmp    $PROT_MODE_CSEG, $protcseg
       .code32                     # Assemble for 32-bit mode
@@ -218,22 +236,16 @@ i386_init () at kern/init.c:24
 		readseg(ph->p_pa, ph->p_memsz, ph->p_offset);
 ```
 
-## 代码笔记
-以下是阅读代码过程中整理的笔记。
+## 备注
+以下是阅读代码过程中查阅网上资料而整理的笔记。
 
-1. Test对两个参数(目标，源)执行AND逻辑操作，并根据结果设置标志寄存器，结果本身不会保存。
-
-2. x86 EFLAGS寄存器各状态标志的含义：
+1. x86 EFLAGS寄存器各状态标志的含义：
     * CF(bit 0) [Carry flag]: 若算术操作产生的结果在最高有效位(most-significant bit)发生进位或借位则将其置1，反之清零。这个标志指示无符号整型运算的溢出状态，这个标志同样在多倍精度运算(multiple-precision arithmetic)中使用。
     * PF(bit 2) [Parity flag]: 如果结果的最低有效字节(least-significant byte)包含偶数个1位则该位置1，否则清零。
     * AF(bit 4) [Adjust flag]: 如果算术操作在结果的第3位发生进位或借位则将该标志置1，否则清零。这个标志在BCD(binary-code decimal)算术运算中被使用。
     * ZF(bit 6) [Zero flag]: 若结果为0则将其置1，反之清零。
     * SF(bit 7) [Sign flag]: 该标志被设置为有符号整型的最高有效位。(0指示结果为正，反之则为负)
     * OF(bit 11) [Overflow flag]: 如果整型结果是较大的正数或较小的负数，并且无法匹配目的操作数时将该位置1，反之清零。这个标志为带符号整型运算指示溢出状态。
-
-3. readsect函数中调用了insl函数，而insl函数的实现是一个内联汇编语句。这个[stackflow网站](https://stackoverflow.com/questions/38410829/why-cant-find-the-insl-instruction-in-x86-document)解释了insl函数的作用：“That function will read cnt dwords from the input port specified by port into the supplied output array addr.”。关于内联汇编的介绍见[Brennan's Guide to Inline Assembly](http://www.delorie.com/djgpp/doc/brennan/brennan_att_inline_djgpp.html)和[GCC内联汇编基础](https://www.jianshu.com/p/1782e14a0766)。
-
-4. `.byte`在当前位置插入一个字节；`.word`在当前位置插入一个字。
 
 ## 疑问
 
