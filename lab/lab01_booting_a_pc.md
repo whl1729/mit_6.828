@@ -32,11 +32,19 @@
 
 见[《MIT 6.828 Lab 1 Exercise 3》实验报告](lab01_exercise03_trace_into_boot_loader.md)。
 
-> 备注：可以学习一下Jason Leaster关于Exercise 3的博客。
-
 ### Exercise 4: 阅读C指针材料和pointer.c代码
 
 见[《MIT 6.828 Lab 1 Exercise 4》实验报告](lab01_exercise04_learn_pointer.md)。
+
+### Exercise 5: 修改链接地址并观察boot loader运行情况
+
+> Exercise 5. Trace through the first few instructions of the boot loader again and identify the first instruction that would "break" or otherwise do the wrong thing if you were to get the boot loader's link address wrong. Then change the link address in boot/Makefrag to something wrong, run make clean, recompile the lab with make, and trace into the boot loader again to see what happens. Don't forget to change the link address back and make clean again afterward!
+
+#### 解答
+
+练习5包括两部分：一是阅读boot loader开头的代码，并找出修改链接地址后会导致指令出错的地方；二是动手实战，修改boot/Makeflag中的链接地址并观察boot loader运行情况。
+
+2. 阅读代码时没找到会受链接地址影响的指令，因此直接实战。将`-Ttext 0x7C00`改为`-Ttext 0x1C00`后，重新编译，然后gdb调试。我在0x7C00和0x1C00这两个地址均设置了断点，然后敲c，发现仍然是在0x7C00停住，再敲一次c，会报异常：“Program received signal SIGTRAP, Trace/breakpoint trap.”我预期修改后boot loader的起始地址应该从0x1c00开始，而gdb调试显示并没跑到地址为0x1c00的地方，所以怀疑对链接地址的修改没生效。后来看了[fatsheep9146的博客](https://www.cnblogs.com/fatsheep9146/p/5220004.html)，才知道这是正常的：BIOS是默认把boot loader加载到0x7C00内存地址处，所以boot loader的起始地址仍然是0x7C00.修改链接地址后，会导致`lgdt gdtdesc`和`ljmp    $PROT_MODE_CSEG, $protcseg`两句指令出错，两者都需要计算地址，计算方法为链接地址加上偏移，因此将链接地址修改成与加载地址不一样后，会导致地址计算失败。比如这里的gdtdesc和$protcseg的正确地址为0x7c64和0x7c32，修改链接地址后两者的地址分别变为0x1c64和0x1c32。
 
 ## 实验笔记
 
@@ -78,9 +86,17 @@
     * 将处理器由实模式切换到虚模式。
     * 从硬盘中读取内核（通过直接访问IDE磁盘设备寄存器）
 
+4. 使用`readelf -a`或`objdump -h|-x` 命令可以查看elf文件的信息。
+
+5. load_addr（加载地址）和link_addr（链接地址）的区别：
+    * 一个section的load_addr（或“LMA”）是指这个section加载到内存中的地址
+    * 一个section的link_addr（或“VMA”）是指这个section预期在内存中的运行地址
+
 ## 问题汇总
 
 1. Q：`make qemu`进入QEMU界面后如何退出？目前我只能通过关闭终端来退出。
 
 2. Q：`make qemu-gdb`进入QEMU界面，然后通过关闭终端退出，再次`make qemu-gdb`时报错：“qemu-system-i386: -gdb tcp::25000: Failed to bind socket: Address already in use”，怎么解决？
    A: 发生这种问题是由于端口被程序绑定而没有释放造成。可以使用`netstat -lp`命令查询当前处于连接的程序以及对应的进程信息。然后用`ps pid`察看对应的进程，并使用`kill pid`关闭该进程即可。
+
+3. Q: BIOS, boot_loader和kernel的区别是什么？它们做的事情分别是什么？
