@@ -1,5 +1,7 @@
 # 《MIT 6.828 Lab1: Booting a PC》实验报告
 
+本实验的网站链接见：[Lab 1: Booting a PC](https://pdos.csail.mit.edu/6.828/2017/labs/lab1/)。
+
 ## 实验内容
 
 1. 熟悉x86汇编语言、QEMU x86仿真器、PC开机引导流程
@@ -18,14 +20,9 @@
 
 #### 解答
 
-1. 读完《PC Assembly Language》，并输出[学习笔记](read_pc_assembly_language.md)。
-2. 读完《Brennan's Guide to Inline Assembly》，并输出[学习笔记](read_brennans_guide_to_inline_assembly.md)。
+1. [PC Assembly Language Book](https://pdos.csail.mit.edu/6.828/2017/readings/pcasm-book.pdf)是一本学习x86汇编语言的好书，不过要注意此书的例子是为NASM汇编器而设计，而我们课程使用的是GNU汇编器。我的学习笔记：[《PC Assembly Language》读书笔记](read_pc_assembly_language.md)。
 
-#### 备注
-
-1. [PC Assembly Language Book](https://pdos.csail.mit.edu/6.828/2017/readings/pcasm-book.pdf)是一本学习x86汇编语言的好书，不过要注意此书的例子是为NASM汇编器而设计，而我们课程使用的是GNU汇编器。
-
-2. NASM汇编器使用Intel语法，而GNU汇编器使用AT&T语法。两者的语法差异可以参考[Brennan's Guide to Inline Assembly](http://www.delorie.com/djgpp/doc/brennan/brennan_att_inline_djgpp.html)。
+2. NASM汇编器使用Intel语法，而GNU汇编器使用AT&T语法。两者的语法差异可以参考[Brennan's Guide to Inline Assembly](http://www.delorie.com/djgpp/doc/brennan/brennan_att_inline_djgpp.html)。我的学习笔记：[《Brennan's Guide to Inline Assembly》学习笔记](read_brennans_guide_to_inline_assembly.md)。
 
 ### Exercise 2：使用GDB命令跟踪BIOS做了哪些事情
 
@@ -34,6 +31,12 @@
 ### Exercise 3: 使用GDB命令跟踪boot loader做了哪些事情
 
 见[《MIT 6.828 Lab 1 Exercise 3》实验报告](lab01_exercise03_trace_into_boot_loader.md)。
+
+> 备注：可以学习一下Jason Leaster关于Exercise 3的博客。
+
+### Exercise 4: 阅读C指针材料和pointer.c代码
+
+见[《MIT 6.828 Lab 1 Exercise 4》实验报告](lab01_exercise04_learn_pointer.md)。
 
 ## 实验笔记
 
