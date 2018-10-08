@@ -46,6 +46,38 @@
 
 2. 阅读代码时没找到会受链接地址影响的指令，因此直接实战。将`-Ttext 0x7C00`改为`-Ttext 0x1C00`后，重新编译，然后gdb调试。我在0x7C00和0x1C00这两个地址均设置了断点，然后敲c，发现仍然是在0x7C00停住，再敲一次c，会报异常：“Program received signal SIGTRAP, Trace/breakpoint trap.”我预期修改后boot loader的起始地址应该从0x1c00开始，而gdb调试显示并没跑到地址为0x1c00的地方，所以怀疑对链接地址的修改没生效。后来看了[fatsheep9146的博客](https://www.cnblogs.com/fatsheep9146/p/5220004.html)，才知道这是正常的：BIOS是默认把boot loader加载到0x7C00内存地址处，所以boot loader的起始地址仍然是0x7C00.修改链接地址后，会导致`lgdt gdtdesc`和`ljmp    $PROT_MODE_CSEG, $protcseg`两句指令出错，两者都需要计算地址，计算方法为链接地址加上偏移，因此将链接地址修改成与加载地址不一样后，会导致地址计算失败。比如这里的gdtdesc和$protcseg的正确地址为0x7c64和0x7c32，修改链接地址后两者的地址分别变为0x1c64和0x1c32。
 
+### Exercise 6: 为什么当BIOS进入boot loader时，与当boot loader进入内核时，这两个时刻在地址为0x00100000的内存中的内容不相同？
+
+> Exercise 6. Reset the machine (exit QEMU/GDB and start them again). Examine the 8 words of memory at 0x00100000 at the point the BIOS enters the boot loader, and then again at the point the boot loader enters the kernel. Why are they different? What is there at the second breakpoint? (You do not really need to use QEMU to answer this question. Just think.)
+
+#### 解答
+0x00100000这个地址是内核加载到内存中的地址。当BIOS进入boot loader时，还没将内核加载到这块内存，其内容是随机的；而当boot loader进入内核时，内核已经加载完成，其内容就是内核文件内容。因此这两个阶段对应的0x00100000地址的内容是不相同的。可以通过gdb来验证：
+
+1. 当BIOS刚进入boot loader时，地址0x00100000往后的8个word取值均为0.
+```
+(gdb) c
+Continuing.
+[   0:7c00] => 0x7c00:  cli    
+Breakpoint 1, 0x00007c00 in ?? ()
+
+(gdb) x/8xw 0x00100000
+0x100000:   0x00000000  0x00000000  0x00000000  0x00000000
+0x100010:   0x00000000  0x00000000  0x00000000  0x00000000
+```
+
+2. 当boot loader进入内核时，地址0x00100000往后的8个word已经出现非零值。我们还可以多加几个断点，以观察此内存地址内容最早是什么时候被修改的。实验证明是在bootmain函数中的for循环第一次结束后被修改的，而for循环做的事情就是将内核中的各个program segment加载到内存中。
+
+```
+(gdb) c
+Continuing.
+=> 0x7d6b:  call   *0x10018
+Breakpoint 4, 0x00007d6b in ?? ()
+
+(gdb) x/8xw 0x00100000
+0x100000:   0x1badb002  0x00000000  0xe4524ffe  0x7205c766
+0x100010:   0x34000004  0x2000b812  0x220f0011  0xc0200fd8
+```
+
 ## 实验笔记
 
 ### 环境部署
