@@ -50,10 +50,6 @@
 
 > Exercise 6. Reset the machine (exit QEMU/GDB and start them again). Examine the 8 words of memory at 0x00100000 at the point the BIOS enters the boot loader, and then again at the point the boot loader enters the kernel. Why are they different? What is there at the second breakpoint? (You do not really need to use QEMU to answer this question. Just think.)
 
-### Exercise 7: 观察内存地址映射瞬间及分析地址映射失败的影响
-
-见[《MIT 6.828 Lab 1 Exercise 7》实验报告](lab01_exercise07_observe_memory_mapping.md)。
-
 #### 解答
 0x00100000这个地址是内核加载到内存中的地址。当BIOS进入boot loader时，还没将内核加载到这块内存，其内容是随机的；而当boot loader进入内核时，内核已经加载完成，其内容就是内核文件内容。因此这两个阶段对应的0x00100000地址的内容是不相同的。可以通过gdb来验证：
 
@@ -81,6 +77,14 @@ Breakpoint 4, 0x00007d6b in ?? ()
 0x100000:   0x1badb002  0x00000000  0xe4524ffe  0x7205c766
 0x100010:   0x34000004  0x2000b812  0x220f0011  0xc0200fd8
 ```
+
+### Exercise 7: 观察内存地址映射瞬间及分析地址映射失败的影响
+
+见[《MIT 6.828 Lab 1 Exercise 7》实验报告](lab01_exercise07_observe_memory_mapping.md)。
+
+### Exercise 8: 串口格式化打印
+
+见[《MIT 6.828 Lab 1 Exercise 8》实验报告](lab01_exercise08_formatted_printing_to_the_console.md)。
 
 ## 实验笔记
 
