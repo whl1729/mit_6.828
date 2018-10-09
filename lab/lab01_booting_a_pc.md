@@ -50,6 +50,10 @@
 
 > Exercise 6. Reset the machine (exit QEMU/GDB and start them again). Examine the 8 words of memory at 0x00100000 at the point the BIOS enters the boot loader, and then again at the point the boot loader enters the kernel. Why are they different? What is there at the second breakpoint? (You do not really need to use QEMU to answer this question. Just think.)
 
+### Exercise 7: 观察内存地址映射瞬间及分析地址映射失败的影响
+
+见[《MIT 6.828 Lab 1 Exercise 7》实验报告](lab01_exercise07_observe_memory_mapping.md)。
+
 #### 解答
 0x00100000这个地址是内核加载到内存中的地址。当BIOS进入boot loader时，还没将内核加载到这块内存，其内容是随机的；而当boot loader进入内核时，内核已经加载完成，其内容就是内核文件内容。因此这两个阶段对应的0x00100000地址的内容是不相同的。可以通过gdb来验证：
 
@@ -124,6 +128,14 @@ Breakpoint 4, 0x00007d6b in ?? ()
     * 一个section的load_addr（或“LMA”）是指这个section加载到内存中的地址
     * 一个section的link_addr（或“VMA”）是指这个section预期在内存中的运行地址
 
+### Part 3: The Kernel
+
+1. 内核的VMA和LMA
+    * 输入`objdump -h obj/kern/kernel`可以发现内核的VMA（链接地址）和LMA（加载地址）不同。
+    * 一般倾向于将操作系统内核链接到很高的虚拟地址来运行，这是为了把低地址留给用户程序使用。
+    * 很多机器不具有0xf0100000这个物理地址，我们不能指望一定可以将内核加载到那里。因此，我们使用处理器的内存管理硬件来进行地址映射，将0xf0100000映射到0x00100000.
+    * lab1中我们只会映射最小的4MB物理内存，将0xf0000000~0xf0400000与0x00000000~0x00400000均映射到0x00000000~0x00400000，任何不在这两段范围的地址均会导致硬件异常。
+
 ## 问题汇总
 
 1. Q：`make qemu`进入QEMU界面后如何退出？目前我只能通过关闭终端来退出。
@@ -132,3 +144,6 @@ Breakpoint 4, 0x00007d6b in ?? ()
    A: 发生这种问题是由于端口被程序绑定而没有释放造成。可以使用`netstat -lp`命令查询当前处于连接的程序以及对应的进程信息。然后用`ps pid`察看对应的进程，并使用`kill pid`关闭该进程即可。
 
 3. Q: BIOS, boot_loader和kernel的区别是什么？它们做的事情分别是什么？
+
+4. Q: lab1中我们将0xf0000000~0xf0400000与0x00000000~0x00400000均映射到0x00000000~0x00400000，这样不会造成冲突吗？还是说这两个地址段不会共存（一开始是0x00000000~0x00400000直接线性映射为自身，而此时程序中的虚拟地址始终也在0x00000000~0x00400000这个区间内；等到加载内核时，才将0xf0000000~0xf0400000映射到0x00000000~0x00400000，而内核程序中的虚拟地址始终也在0xf0000000~0xf0400000这个区间内）？
+
