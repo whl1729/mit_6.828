@@ -86,6 +86,23 @@ Breakpoint 4, 0x00007d6b in ?? ()
 
 见[《MIT 6.828 Lab 1 Exercise 8》实验报告](lab01_exercise08_formatted_printing_to_the_console.md)。
 
+### Exercise 9: 分析内核栈初始化
+
+> Exercise 9. Determine where the kernel initializes its stack, and exactly where in memory its stack is located. How does the kernel reserve space for its stack? And at which "end" of this reserved area is the stack pointer initialized to point to?
+
+#### 解答
+
+首先从entry标签的位置往下阅读，在relocated标签下面有句指令：`movl	$(bootstacktop),%esp`，这句指令把栈指针的值赋给%esp寄存器。继续往下看，找到bootstack标签，其中`.space KSTKSIZE`语句申请了大小为KSTKSIZE = 8 * PGSIZE = 8 * 4096 字节、初始值全为0的栈空间。再往后定义了bootstacktop标签，可见栈顶位置处于栈的最高地址上，而栈指针指向栈顶，亦即指向栈的最高地址，这也说明栈是由上到下（高地址向低地址）生长的。栈顶的位置我不知道怎么确定的，通过gdb调试观察发现$bootstacktop的值为0xf0110000，这个是虚拟地址，实际的物理地址为0x00110000.
+
+```
+.data
+	.p2align	PGSHIFT		# force page alignment
+	.globl		bootstack
+bootstack:
+	.space		KSTKSIZE
+	.globl		bootstacktop   
+bootstacktop:
+```
 ## 实验笔记
 
 ### 环境部署
@@ -139,6 +156,8 @@ Breakpoint 4, 0x00007d6b in ?? ()
     * 一般倾向于将操作系统内核链接到很高的虚拟地址来运行，这是为了把低地址留给用户程序使用。
     * 很多机器不具有0xf0100000这个物理地址，我们不能指望一定可以将内核加载到那里。因此，我们使用处理器的内存管理硬件来进行地址映射，将0xf0100000映射到0x00100000.
     * lab1中我们只会映射最小的4MB物理内存，将0xf0000000~0xf0400000与0x00000000~0x00400000均映射到0x00000000~0x00400000，任何不在这两段范围的地址均会导致硬件异常。
+
+2. `.space size , fill` This directive emits size bytes, each of value fill. Both size and fill are absolute expressions. If the comma and fill are omitted, fill is assumed to be zero.
 
 ## 问题汇总
 
