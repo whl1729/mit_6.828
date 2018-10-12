@@ -103,6 +103,11 @@ bootstack:
 	.globl		bootstacktop   
 bootstacktop:
 ```
+
+### Exercise 10: 研究test_backtrace函数
+
+详见[《MIT 6.828 Lab 1 Exercise 10》实验报告](lab01_exercise10_test_backtrace.md)。
+
 ## 实验笔记
 
 ### 环境部署
@@ -159,6 +164,8 @@ bootstacktop:
 
 2. `.space size , fill` This directive emits size bytes, each of value fill. Both size and fill are absolute expressions. If the comma and fill are omitted, fill is assumed to be zero.
 
+3. 如果同一程序的所有函数开头都遵循“ebp压栈，然后将esp的值复制给ebp”的约定，那么沿着被保存的ebp指针这条链，将可以追踪整个调用栈。
+
 ## 问题汇总
 
 1. Q：`make qemu`进入QEMU界面后如何退出？目前我只能通过关闭终端来退出。
@@ -170,3 +177,6 @@ bootstacktop:
 
 4. Q: lab1中我们将0xf0000000~0xf0400000与0x00000000~0x00400000均映射到0x00000000~0x00400000，这样不会造成冲突吗？还是说这两个地址段不会共存（一开始是0x00000000~0x00400000直接线性映射为自身，而此时程序中的虚拟地址始终也在0x00000000~0x00400000这个区间内；等到加载内核时，才将0xf0000000~0xf0400000映射到0x00000000~0x00400000，而内核程序中的虚拟地址始终也在0xf0000000~0xf0400000这个区间内）？
 
+5. Q: 将boot loader或kernel加载到内存时，代码段和数据段分别加载到什么地方？两者是紧挨着的还是隔得很远？
+
+6. Q: 理解call和ret指令？
