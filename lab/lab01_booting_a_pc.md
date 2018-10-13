@@ -108,6 +108,10 @@ bootstacktop:
 
 详见[《MIT 6.828 Lab 1 Exercise 10》实验报告](lab01_exercise10_test_backtrace.md)。
 
+### Exercise 11: 实现mon_backtrace函数
+
+详见[《MIT 6.828 Lab 1 Exercise 11》实验报告](lab01_exercise11_implement_mon_backtrace.md)。
+
 ## 实验笔记
 
 ### 环境部署
