@@ -23,8 +23,6 @@ void test_backtrace(int x)
 }
 ```
 
-i386_init调用test_backtrace时传入的参数为5，结合以上代码可知test_backtrace会被调用5次，输入参数依次为5、4、3、2、1，因此"entering test_backtrace"的顺序为5、4、3、2、1, "leaving test_backtrace"的顺序为1、2、3、4、5.最后当x=0时，将会调用mon_backtrace(0,0,0)。
-
 ### test_backtrace函数对应的汇编代码
 ```
 f0100040:	55                   	push   %ebp
@@ -80,7 +78,7 @@ f01000dd:	83 c4 10             	add    $0x10,%esp
 ```
 
 test_backtrace函数的调用发生在i386_init函数中，传入的参数x=5.我们将从这里开始跟踪栈内数据的变化情况。各寄存器及栈内的数据如下所示。可见，共有两个4字节的整数被压入栈：
-1. 输入参数的值i（也就是5）。
+1. 输入参数的值（也就是5）。
 2. call指令的下一条指令的地址（也就是f01000dd）。
 
 ```
@@ -203,6 +201,43 @@ mon_backtrace函数目前内部为空，不需关注。
 #### 退出test_backtrace(0)
 连续3个pop语句将ebx, esi和ebp寄存器依次出栈，然后通过ret语句返回。其他1~5的退出过程类似，不再赘述。
 
+### 回答问题
+
+#### 问题1：每次调用test_backtrace时发生了什么事情？
+
+答：每次调用test_backtrace时，主要做了如下事情：
+1. 将返回地址（call指令的下一条指令的地址）压栈
+2. 将ebp, esi, ebx三个寄存器的值压栈，以便退出函数前恢复它们的值
+3. 调用cprintf函数打印"entering test_backtrace x"，其中x为输入参数的值
+4. 将输入参数(x-1)压栈，再在栈中分配3个双字，共16字节，以方便清栈
+5. 调用test_backtrace(x-1)
+6. 调用cprintf函数打印"leaving test_backtrace x"，其中x为输入参数的值
+
+最终QEMU窗口的打印信息如下所示。
+```
+6828 decimal is 15254 octal!
+entering test_backtrace 5
+entering test_backtrace 4
+entering test_backtrace 3
+entering test_backtrace 2
+entering test_backtrace 1
+entering test_backtrace 0
+leaving test_backtrace 0
+leaving test_backtrace 1
+leaving test_backtrace 2
+leaving test_backtrace 3
+leaving test_backtrace 4
+leaving test_backtrace 5
+```
+
+#### 问题2：每次调用test_backtrace时将多少个双字（32位）压栈？它们分别是什么？
+
+答：结合第一问的回答，不难发现每次调用test_backtrace时共将8个双字压栈：
+1. 返回地址
+2. ebp, esi, ebx三个寄存器的值
+3. 输入参数(x-1)的值
+4. 3个预留双字（与输入参数构成4字节，方便清栈）
+
 ## 疑问
 
 1. 在i386_init入口处设置断点并运行，发现执行`memset(edata, 0, end - edata);`时会异常结束，这是什么原因？（目前没定位出来，暂时注释掉这一句后能正常运行）
@@ -215,7 +250,7 @@ mon_backtrace函数目前内部为空，不需关注。
 ## 备注
 
 1. `call   0xf01001bc <__x86.get_pc_thunk.bx>`的作用：
-    * 根据[What is i686.get_pc_thunk.bx? Why do we need this call?](https://stackoverflow.com/questions/6679846/what-is-i686-get-pc-thunk-bx-why-do-we-need-this-call/30244270)）的解释，这个指令是将代码的地址保存到ebx寄存器，这样全局对象可以通过ebx寄存器的值加上偏移量来访问。
+    * 根据[What is i686.get_pc_thunk.bx? Why do we need this call?](https://stackoverflow.com/questions/6679846/what-is-i686-get-pc-thunk-bx-why-do-we-need-this-call/30244270)的解释，这个指令是将代码的地址保存到ebx寄存器，这样全局对象可以通过ebx寄存器的值加上偏移量来访问。
     * 使用gdb调试时发现这个get_pc_thunk.bx函数的实现只是将esp寄存器保存的地址对应的值赋给ebx寄存器：
 ```
 => 0xf01001bc <__x86.get_pc_thunk.bx>:  mov    (%esp),%ebx
