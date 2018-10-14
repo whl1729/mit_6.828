@@ -112,6 +112,10 @@ bootstacktop:
 
 详见[《MIT 6.828 Lab 1 Exercise 11》实验报告](lab01_exercise11_implement_mon_backtrace.md)。
 
+### Exercise 12: backtrace函数增加打印文件名、函数名及行号等信息
+
+详见[《MIT 6.828 Lab 1 Exercise 12》实验报告](lab01_exercise12_backtrace_print_more_info.md)。
+
 ## 实验笔记
 
 ### 环境部署
