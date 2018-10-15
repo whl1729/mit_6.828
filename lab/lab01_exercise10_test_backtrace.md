@@ -240,7 +240,49 @@ leaving test_backtrace 5
 
 ## 疑问
 
-1. 在i386_init入口处设置断点并运行，发现执行`memset(edata, 0, end - edata);`时会异常结束，这是什么原因？（目前没定位出来，暂时注释掉这一句后能正常运行）
+1. 在i386_init入口处设置断点并运行，发现执行`memset(edata, 0, end - edata);`时会异常结束，这是什么原因？目前没定位出来，暂时注释掉这一句后，运行到monitor函数时又会不断打印乱码以及“unknown command”，这又是什么原因？
+
+```
+// error info in qemu
+EAX=00000000 EBX=00000000 ECX=000001a9 EDX=00000000
+ESI=00000000 EDI=f0113000 EBP=f010ffd8 ESP=f010ffcc
+EIP=f010171b EFL=00000002 [-------] CPL=0 II=0 A20=1 SMM=0 HLT=0
+ES =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+CS =0008 00000000 ffffffff 00cf9a00 DPL=0 CS32 [-R-]
+SS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+DS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+FS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+GS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
+TR =0000 00000000 0000ffff 00008b00 DPL=0 TSS32-busy
+GDT=     00007c4c 00000017
+IDT=     00000000 000003ff
+CR0=80010011 CR2=00000040 CR3=00112000 CR4=00000000
+DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000 
+DR6=ffff0ff0 DR7=00000400
+EFER=0000000000000000
+Triple fault.  Halting for inspection via QEMU monitor.
+// error info in gdb
+Program received signal SIGTRAP, Trace/breakpoint trap.
+The target architecture is assumed to be i386
+=> 0xf010171b <memset+73>:	Error while running hook_stop:
+Cannot access memory at address 0xf010171b
+0xf010171b in memset (
+    v=<error reading variable: Cannot access memory at address 0xf010ffd0>, 
+    c=<error reading variable: Cannot access memory at address 0xf010ffd4>, 
+    n=<error reading variable: Cannot access memory at address 0xf010ffd8>) at lib/string.c:131
+1: $ebp = (void *) 0xf010ffd8
+2: $esp = (void *) 0xf010ffcc
+3: /x $eax = 0x0
+4: /x $ebx = 0x0
+5: $ecx = 488
+6: $edx = 0
+8: /x $edi = 0xf0112f04
+9: /x $esi = 0x0
+10: *0xf0111300@10 = <error: Cannot access memory at address 0xf0111300>
+11: *0xf0112f00@10 = <error: Cannot access memory at address 0xf0112f00>
+12: *0xf01136a0@10 = <error: Cannot access memory at address 0xf01136a0>	asm volatile("cld; rep stosl\n"
+```
 
 2. 这段代码中多次出现"sub 0x8, %esp"或"add 0x10, %esp"等语句，不知道为啥要加减对应的值？
 答：突然想明白了，这里应该是默认输入参数为4个4字节的word，不够4个的话也在栈中分配4个word的空间，这样清栈的时候会很简单，直接将%esp加上16即可。

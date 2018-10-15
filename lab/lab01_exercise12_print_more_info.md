@@ -249,6 +249,8 @@ Stack backtrace:
 
 1. printf("%.\*s", length, string) prints at most length characters of string.
 
+2. 转义字符：'\a'（响铃，bell），'\b'（退格，backspace）。
+
 ### stabs
 
 1. STABS (Symbol TABle Strings) is a debugging data format for storing information about computer programs for use by symbolic and source-level debuggers.
