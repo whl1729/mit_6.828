@@ -30,9 +30,8 @@ K>
 
 > Each line gives the file name and line within that file of the stack frame's eip, followed by the name of the function and the offset of the eip from the first instruction of the function (e.g., monitor+106 means the return eip is 106 bytes past the beginning of monitor).
 
-> Be sure to print the file and function names on a separate line, to avoid confusing the grading script.
-
-> Tip: printf format strings provide an easy, albeit obscure, way to print non-null-terminated strings like those in STABS tables.	printf("%.\*s", length, string) prints at most length characters of string. Take a look at the printf man page to find out why this works.
+> Be sure to print the file and function names on a separate line, to avoid confusing the grading script.  
+Tip: printf format strings provide an easy, albeit obscure, way to print non-null-terminated strings like those in STABS tables.	printf("%.\*s", length, string) prints at most length characters of string. Take a look at the printf man page to find out why this works.
 
 > You may find that some functions are missing from the backtrace. For example, you will probably see a call to monitor() but not to runcmd(). This is because the compiler in-lines some function calls. Other optimizations may cause you to see unexpected line numbers. If you get rid of the -O2 from GNUMakefile, the backtraces may make more sense (but your kernel will run more slowly).
 

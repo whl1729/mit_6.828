@@ -6,30 +6,34 @@
 
 > The above exercise should give you the information you need to implement a stack backtrace function, which you should call mon_backtrace(). A prototype for this function is already waiting for you in kern/monitor.c. You can do it entirely in C, but you may find the read_ebp() function in inc/x86.h useful. You'll also have to hook this new function into the kernel monitor's command list so that it can be invoked interactively by the user.
 
-> The backtrace function should display a listing of function call frames in the following format:
-
-> Stack backtrace:
-
-> ebp f0109e58  eip f0100a62  args 00000001 f0109e80 f0109e98 f0100ed2 00000031
-
-> ebp f0109ed8  eip f01000d6  args 00000000 00000000 f0100058 f0109f28 00000061
-  
-> ...
-    
-> By studying kern/entry.S you'll find that there is an easy way to tell when to stop.
-
-> Implement the backtrace function as specified above. 
+> The backtrace function should display a listing of function call frames in the following format:  
+Stack backtrace:  
+ebp f0109e58  eip f0100a62  args 00000001 f0109e80 f0109e98 f0100ed2 00000031  
+ebp f0109ed8  eip f01000d6  args 00000000 00000000 f0100058 f0109f28 00000061  
+...  
+By studying kern/entry.S you'll find that there is an easy way to tell when to stop.  
+Implement the backtrace function as specified above.   
 
 ## 解答
 
-### 代码实现
-简单解释一下：题目要求打印调用栈的信息，包括ebp和eip寄存器的值、输入参数的值等。
+题目要求打印调用栈的信息，包括ebp和eip寄存器的值、输入参数的值等。
 
-代码实现如下所示。
+1. 按照提示，我们首先可以调用read\_ebp函数来获取当前ebp寄存器的值。ebp寄存器的值实际上是一个指针，指向当前函数的栈帧的底部（而esp寄存器指向当前函数的栈顶）。我们可以把整个调用栈看做一个数组，其中每个元素均为4字节的整数，并以ebp指针的值为数组起始地址，那么ebp[1]存储的就是函数返回地址，也就是题目中要求的eip的值，ebp[2]以后存储的是输入参数的值。由于题目要求打印5个输入参数，因此需要获取ebp[2]～ebp[6]的值。这样第一条栈信息便可打印出来。
+
+2. 那么怎么打印下一条栈信息呢？还得从ebp入手。当前ebp指针存储的恰好是调用者的ebp寄存器的值，因此当前ebp指针又可以看做是一个链表头，我们通过链表头就可以遍历整个链表。举个例子：假设有A、B、C三个函数，A调用B，B调用C，每个函数都对应有一个栈帧，栈帧的底部地址均存储在当时的ebp寄存器中，不妨记为a_ebp, b_ebp和c_ebp，那么将有c_ebp -> b_ebp -> a_ebp，用程序语言表示就是：`a_ebp = (uint32_t *)*b_ebp`和`b_ebp = (uint32_t *)*c_ebp`。
+
+3. 还有一个问题：怎么知道遍历何时结束呢？题目中提示可以参考`kern/entry.S`，于是我打开此文件，果然找打答案：内核初始化时会将ebp设置为0，因此当我们检查到ebp为0后就应该结束了。
+```
+	# Clear the frame pointer register (EBP)
+	# so that once we get into debugging C code,
+	# stack backtraces will be terminated properly.
+	movl	$0x0,%ebp			# nuke frame pointer
+```
+
+4. 代码实现
 ```
 int mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
-	// Your code here.
     uint32_t *ebp;
 
     ebp = (uint32_t *)read_ebp();
@@ -38,7 +42,8 @@ int mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 
     while (ebp)
     {
-        cprintf("  ebp %08x  eip %08x  args %08x %08x %08x %08x %08x\r\n", ebp, ebp[1], ebp[2], ebp[3], ebp[4], ebp[5], ebp[6]);
+        cprintf("  ebp %08x  eip %08x  args %08x %08x %08x %08x %08x\r\n", 
+                ebp, ebp[1], ebp[2], ebp[3], ebp[4], ebp[5], ebp[6]);
 
         ebp = (uint32_t *)*ebp;
     }
@@ -47,7 +52,7 @@ int mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 }
 ```
 
-### 输出结果
+5. 输出结果
 ```
 6828 decimal is 15254 octal!
 entering test_backtrace 5

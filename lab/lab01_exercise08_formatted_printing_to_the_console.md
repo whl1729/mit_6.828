@@ -6,10 +6,10 @@
 
 > Exercise 8. Read through kern/printf.c, lib/printfmt.c, and kern/console.c, and make sure you understand their relationship.We have omitted a small fragment of code - the code necessary to print octal numbers using patterns of the form "%o". Find and fill in this code fragment. And be able to answer the following questions.
 
-### 解答
+## 解答
 
-#### 补全打印八进制整数的代码
-参考打印10进制和16进制的代码即可。
+### 补全打印八进制整数的代码
+参考打印10进制和16进制整数的代码即可。
 ```
 case 'o':
     num = getuint(&ap, lflag);
@@ -17,13 +17,13 @@ case 'o':
     goto number;
 ```
 
-#### 问题1：解释printf.c和console.c之间的接口关系
+### 问题1：解释printf.c和console.c之间的接口关系
 
 > Explain the interface between printf.c and console.c. Specifically, what function does console.c export? How is this function used by printf.c?
 
 解答：printf.c中的putch函数调用了console.c中的cputchar函数，具体调用关系：`cprintf -> vcprintf -> putch -> cputchar`。
 
-#### 问题2：解释console.c的以下代码
+### 问题2：解释console.c的以下代码
 ```
 1 if (crt_pos >= CRT_SIZE) {
 2     int i;
@@ -36,15 +36,15 @@ case 'o':
 
 解答：联系代码上下文，可以理解这段代码的作用。首先，CRT(cathode ray tube)是阴极射线显示器。根据console.h文件中的定义，CRT_COLS是显示器每行的字长（1个字占2字节），取值为80；CRT_ROWS是显示器的行数，取值为25；而`#define CRT_SIZE	(CRT_ROWS * CRT_COLS)`是显示器屏幕能够容纳的字数，即2000。当crt_pos大于等于CRT_SIZE时，说明显示器屏幕已写满，因此将屏幕的内容上移一行，即将第2行至最后1行（也就是第25行）的内容覆盖第1行至倒数第2行（也就是第24行）。接下来，将最后1行的内容用黑色的空格塞满。将空格字符、0x0700进行或操作的目的是让空格的颜色为黑色。最后更新crt_pos的值。总结：这段代码的作用是当屏幕写满内容时将其上移1行，并将最后一行用黑色空格塞满。
 
-#### 问题3：逐步跟踪以下代码并回答问题
+### 问题3：逐步跟踪以下代码并回答问题
 
 > Trace the execution of the following code step-by-step:
+> * In the call to cprintf(), to what does fmt point? To what does ap point?
+> * List (in order of execution) each call to cons_putc, va_arg, and vcprintf. For cons_putc, list its argument as well. For va_arg, list what ap points to before and after the call. For vcprintf list the values of its two arguments.
 ```
     int x = 1, y = 3, z = 4;
     cprintf("x %d, y %x, z %d\n", x, y, z);
 ```
-> * In the call to cprintf(), to what does fmt point? To what does ap point?
-> * List (in order of execution) each call to cons_putc, va_arg, and vcprintf. For cons_putc, list its argument as well. For va_arg, list what ap points to before and after the call. For vcprintf list the values of its two arguments.
 
 解答：
 1. fmt指向格式化字符串"x %d, y %x, z %d\n"的内存地址（这个字符串是存储在栈中吗？），ap指向第一个要打印的参数的内存地址，也就是x的地址。
@@ -70,23 +70,24 @@ case 'o':
     * 第13次调用cons_putc: printfmt.c第49行，参数为字符'4'.
     * 第14次调用cons_putc: printfmt.c第95行，参数为字符'\n'.
 
-#### 问题4：判断以下代码的输出
+### 问题4：判断以下代码的输出
 
 > Run the following code.
+
+> What is the output? Explain how this output is arrived at in the step-by-step manner of the previous exercise. Here's an ASCII table that maps bytes to characters.
+
+> The output depends on that fact that the x86 is little-endian. If the x86 were instead big-endian what would you set i to in order to yield the same output? Would you need to change 57616 to a different value?
 ```
     unsigned int i = 0x00646c72;
     cprintf("H%x Wo%s", 57616, &i);
 ```
-> What is the output? Explain how this output is arrived at in the step-by-step manner of the previous exercise. Here's an ASCII table that maps bytes to characters.
-
-> The output depends on that fact that the x86 is little-endian. If the x86 were instead big-endian what would you set i to in order to yield the same output? Would you need to change 57616 to a different value?
 
 解答：
 1. 输出为“He110 World”。哈哈，这道题很有意思，不过我看见H和Wo就基本猜到是“Hello World”了，不过疑惑l和o不是16进制字符，怎么能表示出来呢？结果是使用1来代替l，使用0来代替o，有创意！简单解释一下：57616转换成16进制就是0xe110.根据ASCII码，i的4个字节从低到高依次为'r', 'l', 'd', '\0'.这里要求主机是小端序才能正常打印出“World”这个单词。
 
 2. 如果是大端字节序，i的值要修改为0x726c6400，而57616这个值不用修改。因为根据printnum函数实现，打印整数时，总是按照从高位到低位来打印的。
 
-#### 问题5：当打印的参数数目小于格式化字符串中需要的参数个数时会怎样？
+### 问题5：当打印的参数数目小于格式化字符串中需要的参数个数时会怎样？
 
 > In the following code, what is going to be printed after 'y='? (note: the answer is not a specific value.) Why does this happen?
 ```
@@ -95,7 +96,7 @@ cprintf("x=%d y=%d", 3);
 
 解答：打印出来的y的值应该是栈中存储x的位置后面4字节代表的值。因为当打印出x的值后，va_arg函数的ap指针指向x的最后一个字节的下一个字节。因此，不管调用cprintf传入几个参数，在解析到"%d"时，va_arg函数就会取当前指针指向的地址作为int型整数的指针返回。
 
-#### 问题6：如果将GCC的调用约定改为参数从左到右压栈，为支持参数数目可变需要怎样修改cprintf函数？
+### 问题6：如果将GCC的调用约定改为参数从左到右压栈，为支持参数数目可变需要怎样修改cprintf函数？
 
 > Let's say that GCC changed its calling convention so that it pushed arguments on the stack in declaration order, so that the last argument is pushed last. How would you have to change cprintf or its interface so that it would still be possible to pass it a variable number of arguments?
 

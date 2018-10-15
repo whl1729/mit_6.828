@@ -1,6 +1,6 @@
 # 《MIT 6.828 Lab 1 Exercise 3》实验报告
 
-本实验链接：[mit 6.828 lab1 Exercise 3](https://pdos.csail.mit.edu/6.828/2017/labs/lab1/#Exercise-3)。
+本实验的网站链接：[mit 6.828 lab1 Exercise 3](https://pdos.csail.mit.edu/6.828/2017/labs/lab1/#Exercise-3)。
 
 ## 题目
 
@@ -11,10 +11,10 @@
 > Trace into bootmain() in boot/main.c, and then into readsect(). Identify the exact assembly instructions that correspond to each of the statements in readsect(). Trace through the rest of readsect() and back out into bootmain(), and identify the begin and end of the for loop that reads the remaining sectors of the kernel from the disk. Find out what code will run when the loop is finished, set a breakpoint there, and continue to that breakpoint. Then step through the remainder of the boot loader.
 
 > Be able to answer the following questions:
-* At what point does the processor start executing 32-bit code? What exactly causes the switch from 16- to 32-bit mode?
-* What is the last instruction of the boot loader executed, and what is the first instruction of the kernel it just loaded?
-* Where is the first instruction of the kernel?
-* How does the boot loader decide how many sectors it must read in order to fetch the entire kernel from disk? Where does it find this information?
+> * At what point does the processor start executing 32-bit code? What exactly causes the switch from 16- to 32-bit mode?
+> * What is the last instruction of the boot loader executed, and what is the first instruction of the kernel it just loaded?
+> * Where is the first instruction of the kernel?
+> * How does the boot loader decide how many sectors it must read in order to fetch the entire kernel from disk? Where does it find this information?
 
 ## 解答
 
