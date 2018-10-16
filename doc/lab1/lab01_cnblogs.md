@@ -11,4 +11,5 @@
 8. 《MIT 6.828 Lab 1 Exercise 8》实验报告：https://www.cnblogs.com/wuhualong/p/lab01_exercise08_formatted_printing_to_the_console.html
 9. 《MIT 6.828 Lab 1 Exercise 10》实验报告：https://www.cnblogs.com/wuhualong/p/lab01_exercise10_test_backtrace.html
 10. 《MIT 6.828 Lab 1 Exercise 11》实验报告：https://www.cnblogs.com/wuhualong/p/lab01_exercise11_implement_mon_backtrace.html
+    * 《一个memset导致的血案》：https://www.cnblogs.com/wuhualong/p/lab01_bug01_memset.html
 11. 《MIT 6.828 Lab 1 Exercise 12》实验报告：https://www.cnblogs.com/wuhualong/p/lab01_exercise12_print_more_info.html

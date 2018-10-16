@@ -1,5 +1,7 @@
 # 一个memset导致的血案
 
+本文记录解答[MIT 6.828 Lab 1 Exercise 10](https://pdos.csail.mit.edu/6.828/2017/labs/lab1/#Exercise-10)时遇到的一个Bug。
+
 ## 问题描述
 在i386_init入口处设置断点并运行，发现执行`memset(edata, 0, end - edata);`时，QEMU窗口会打印以下日志并卡住，GDB窗口会异常结束。这是什么原因？
 
