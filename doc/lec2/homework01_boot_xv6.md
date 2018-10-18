@@ -1,4 +1,4 @@
-# 《MIT 6.828 Homework 1: boot xv6》笔记
+# 《MIT 6.828 Homework 1: boot xv6》解题报告
 
 本作业的网站链接：[MIT 6.828 Homework 1: boot xv6](https://pdos.csail.mit.edu/6.828/2017/homework/xv6-boot.html)
 
