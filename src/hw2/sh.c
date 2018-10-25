@@ -11,6 +11,9 @@
 // Simplifed xv6 shell.
 
 #define MAXARGS 10
+#define MAX_CMD_LEN 10
+#define CMD_NUM 6
+#define BUF_LEN 512
 
 // All commands have at least a type. Have looked at the type, the code
 // typically casts the *cmd to some specific cmd type.
@@ -22,6 +25,8 @@ struct execcmd {
   int type;              // ' '
   char *argv[MAXARGS];   // arguments to the command to be exec-ed
 };
+
+typedef void (*efunc)(struct execcmd*);
 
 struct redircmd {
   int type;          // < or > 
@@ -37,8 +42,207 @@ struct pipecmd {
   struct cmd *right; // right side of pipe
 };
 
+struct ecmdfunc {
+  char cmd[MAX_CMD_LEN];
+  efunc func;
+};
+
+struct cntinfo {
+    int nline;
+    int nword;
+    int nbyte;
+};
+
 int fork1(void);  // Fork but exits on failure.
 struct cmd *parsecmd(char*);
+void cat(struct execcmd * cmd);
+void grep(struct execcmd * cmd);
+void ls(struct execcmd * cmd);
+void sort(struct execcmd * cmd);
+void uniq(struct execcmd * cmd);
+void wc(struct execcmd * cmd);
+
+char whitespace[] = " \t\r\n\v";
+char symbols[] = "<|>";
+
+struct ecmdfunc g_func_tbl[CMD_NUM] = {
+    {"cat", cat},
+    {"grep", grep},
+    {"ls", ls},
+    {"sort", sort},
+    {"uniq", uniq},
+    {"wc", wc}
+};
+
+/* todo: support reading from stdin */
+void cat(struct execcmd *ecmd)
+{
+    int fd;
+    int pos = 0;
+    int num;
+    char buf[BUF_LEN];
+
+    while (ecmd->argv[++pos])
+    {
+        fd = open(ecmd->argv[pos], O_RDONLY);
+        if (fd < 0)
+        {
+            fprintf(stderr, "cannot open %s!\r\n", ecmd->argv[pos]);
+            continue;
+        }
+
+        while (1)
+        {
+            memset(buf, 0, BUF_LEN);
+
+            num = read(fd, buf, BUF_LEN);
+            if (num == 0)
+            {
+                break;
+            }
+            else if (num < 0)
+            {
+                fprintf(stderr, "failed to read %s!\r\n", ecmd->argv[pos]);
+                break;
+            }
+
+            num = write(fileno(stdin), buf, num);
+            if (num < 0)
+            {
+                fprintf(stderr, "failed to write %s!\r\n", ecmd->argv[pos]);
+                break;
+            }
+        }
+
+        close(fd);
+    }
+}
+
+void grep(struct execcmd *ecmd)
+{
+    printf("welcome to use %s!\r\n", ecmd->argv[0]);
+}
+
+void ls(struct execcmd *ecmd)
+{
+    printf("welcome to use %s!\r\n", ecmd->argv[0]);
+}
+
+void sort(struct execcmd *ecmd)
+{
+    printf("welcome to use %s!\r\n", ecmd->argv[0]);
+}
+
+void uniq(struct execcmd *ecmd)
+{
+    printf("welcome to use %s!\r\n", ecmd->argv[0]);
+}
+
+/* todo: support reading from stdin */
+void wc(struct execcmd *ecmd)
+{
+    struct cntinfo cur;
+    struct cntinfo total;
+    int argc = 0;
+    int pos = 0;
+    int fd;
+    int num;
+    int start;
+    char last;
+    char buf[BUF_LEN];
+
+    memset(&total, 0, sizeof(total));
+
+    while (ecmd->argv[++argc])
+    {
+        fd = open(ecmd->argv[argc], O_RDONLY);
+        if (fd < 0)
+        {
+            fprintf(stderr, "failed to open %s!\r\n", ecmd->argv[argc]);
+            continue;
+        }
+
+        memset(&cur, 0, sizeof(cur));
+        last = 0;
+
+        while (1)
+        {
+            memset(buf, 0, BUF_LEN);
+
+            num = read(fd, buf, BUF_LEN);
+            if (num == 0)
+            {
+                printf("%5d %5d %5d %s\r\n", cur.nline, cur.nword, cur.nbyte, ecmd->argv[argc]);
+                break;
+            }
+            else if (num < 0)
+            {
+                printf("failed to read %s!\r\n", ecmd->argv[argc]);
+                break;
+            }
+
+            cur.nbyte += num;
+            
+            pos = 0;
+
+            while (pos < num)
+            {
+                while ((pos < num) && strchr(whitespace, buf[pos]))
+                {
+                    if (buf[pos] == '\n')
+                    {
+                        cur.nline++;
+                    }
+                    
+                    pos++;
+                }
+                
+                start = pos;
+
+                while ((pos < num) && (!strchr(whitespace, buf[pos])))
+                {
+                    pos++;
+                }
+
+                if ((pos > start) && 
+                    ((start != 0) || (strchr(whitespace, last))))
+                {
+                    cur.nword++;
+                }
+            }
+
+            last = buf[num-1];
+        }
+
+        close(fd);
+
+        total.nline += cur.nline;
+        total.nword += cur.nword;
+        total.nbyte += cur.nbyte;
+    }
+    
+    printf("%5d %5d %5d total\r\n", total.nline, total.nword, total.nbyte);
+}
+
+void
+runecmd(struct execcmd *ecmd)
+{
+    int pos;
+
+    for (pos = 0; pos < CMD_NUM; pos++)
+    {
+        if (0 == strcmp(ecmd->argv[0], g_func_tbl[pos].cmd))
+        {
+            g_func_tbl[pos].func(ecmd);
+            break;
+        }
+    }
+
+    if (pos == CMD_NUM)
+    {
+        fprintf(stderr, "unknown execcmd\n");
+    }
+}
 
 // Execute cmd.  Never returns.
 void
@@ -61,8 +265,8 @@ runcmd(struct cmd *cmd)
     ecmd = (struct execcmd*)cmd;
     if(ecmd->argv[0] == 0)
       _exit(0);
-    fprintf(stderr, "exec not implemented\n");
-    // Your code here ...
+
+    runecmd(ecmd);
     break;
 
   case '>':
@@ -167,9 +371,6 @@ pipecmd(struct cmd *left, struct cmd *right)
 }
 
 // Parsing
-
-char whitespace[] = " \t\r\n\v";
-char symbols[] = "<|>";
 
 int
 gettoken(char **ps, char *es, char **q, char **eq)
