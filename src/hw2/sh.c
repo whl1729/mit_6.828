@@ -14,6 +14,10 @@
 #define MAX_CMD_LEN 10
 #define CMD_NUM 6
 #define BUF_LEN 512
+#define LINE_LEN 100
+#define TRUE   1
+#define FALSE  0
+#define ERROR    (-1)
 
 // All commands have at least a type. Have looked at the type, the code
 // typically casts the *cmd to some specific cmd type.
@@ -118,9 +122,108 @@ void cat(struct execcmd *ecmd)
     }
 }
 
+int issubstr(char *str, char *key)
+{
+    int slen = strlen(str);
+    int klen = strlen(key);
+    int start;
+
+    for (start = 0; start < slen - klen; start++)
+    {
+        if (strncmp(str + start, key, klen) == 0)
+        {
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
+int readline(char *file, char *line)
+{
+    int pos = 0;
+    int offset = 0;
+    static int fd = 0;
+    static int start = 0;
+    static int num = BUF_LEN;
+    static char buf[BUF_LEN];
+
+    memset(line, 0, LINE_LEN);
+
+    if (fd <= 0)
+    {
+        fd = open(file, O_RDONLY);
+        if (fd < 0)
+        {
+            fprintf(stderr, "failed to open %s!\r\n", file);
+            return ERROR;
+        }
+    }
+
+    while (1)
+    {
+        if (start >= num)
+        {
+            memset(buf, 0, BUF_LEN);
+
+            num = read(fd, buf, BUF_LEN);
+            if (num == 0)
+            {
+                close(fd);
+                return strlen(line);
+            }
+            else if (num < 0)
+            {
+                fprintf(stderr, "failed to read %s!\r\n", file);
+                return ERROR;
+            }
+
+            start = 0;
+        }
+
+        for (pos = start; (pos < num) && (buf[pos] != '\n'); pos++) ;
+
+        /* check line's length */
+        if (offset + pos - start + 1 >= LINE_LEN)
+        {
+            start = pos + 1;
+            continue;
+        }
+
+        memcpy(line + offset, buf + start, pos - start + 1);
+        
+        offset += (pos - start);
+        start = pos + 1;
+
+        if (pos < num)
+        {
+            break;
+        }
+    }
+
+    return strlen(line);
+}
+
 void grep(struct execcmd *ecmd)
 {
-    printf("welcome to use %s!\r\n", ecmd->argv[0]);
+    int argc = 1; /* ecmd->argv[1] stands for pattern */
+    int fd;
+    int num;
+    char line[LINE_LEN];
+
+    while (ecmd->argv[++argc])
+    {
+        while ((num = readline(ecmd->argv[argc], line)) > 0)
+        {
+            if (issubstr(line, ecmd->argv[1]))
+            {
+                if (write(fileno(stdin), line, num) < 0)
+                {
+                    fprintf(stderr, "failed to write %s!\r\n", line);
+                }
+            }
+        }
+    }
 }
 
 void ls(struct execcmd *ecmd)
@@ -144,7 +247,7 @@ void wc(struct execcmd *ecmd)
     struct cntinfo cur;
     struct cntinfo total;
     int argc = 0;
-    int pos = 0;
+    int pos;
     int fd;
     int num;
     int start;
