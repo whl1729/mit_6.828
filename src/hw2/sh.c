@@ -205,6 +205,7 @@ int readline(char *file, char *line)
     return strlen(line);
 }
 
+/* todo: support more options and patterns */
 void grep(struct execcmd *ecmd)
 {
     int argc = 1; /* ecmd->argv[1] stands for pattern */
@@ -276,6 +277,7 @@ void quick_sort(char **strs, int left, int right)
     quick_sort(strs, start, right);
 }
 
+/* todo: support more options */
 void sort(struct execcmd *ecmd)
 {
     char lines[LINE_NUM][LINE_LEN];
@@ -305,9 +307,31 @@ void sort(struct execcmd *ecmd)
     }
 }
 
+/* todo: support more options */
 void uniq(struct execcmd *ecmd)
 {
-    printf("welcome to use %s!\r\n", ecmd->argv[0]);
+    int num;
+    int fd;
+    int argc = 0;
+    char cur[LINE_LEN] = {0};
+    char prev[LINE_LEN] = {0};
+
+    if ((!ecmd->argv[2]) || ((fd = open(ecmd->argv[2], O_WRONLY | O_CREAT | O_TRUNC)) < 0))
+    {
+        fd = fileno(stdout);
+    }
+
+    while ((num = readline(ecmd->argv[1], cur)) > 0)
+    {
+        if (memcmp(cur, prev, num))
+        {
+            write(fd, cur, num);
+        }
+
+        memcpy(prev, cur, num);
+
+        prev[num] = 0;
+    }
 }
 
 /* todo: support reading from stdin */
