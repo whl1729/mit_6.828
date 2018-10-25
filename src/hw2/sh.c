@@ -14,6 +14,7 @@
 #define MAX_CMD_LEN 10
 #define CMD_NUM 6
 #define BUF_LEN 512
+#define LINE_NUM 1000
 #define LINE_LEN 100
 #define TRUE   1
 #define FALSE  0
@@ -207,7 +208,6 @@ int readline(char *file, char *line)
 void grep(struct execcmd *ecmd)
 {
     int argc = 1; /* ecmd->argv[1] stands for pattern */
-    int fd;
     int num;
     char line[LINE_LEN];
 
@@ -231,9 +231,78 @@ void ls(struct execcmd *ecmd)
     printf("welcome to use %s!\r\n", ecmd->argv[0]);
 }
 
+/* algorithm for quick sort:
+ * choose a pivot: p
+ * exchange a[0] and a[p]
+ * i = 1, j = n-1
+ * while i <= j
+ *     if a[i] < a[0], i++
+ *     else exchange a[i] and a[j], j--
+ * exchange a[0] and a[i-1]
+ * qsort(a, 0, i-2) and qsort(a, i, n-1)
+ * */
+void quick_sort(char **strs, int left, int right)
+{
+    int start = left + 1;
+    int end = right;
+    char *tmp;
+
+    if (left >= right)
+    {
+        return;
+    }
+
+    while (start <= end)
+    {
+        if (strcmp(strs[start], strs[left]) < 0)
+        {
+            start++;
+        }
+        else
+        {
+            tmp = strs[start];
+            strs[start] = strs[end];
+            strs[end] = tmp;
+            end--;
+        }
+    }
+
+    tmp = strs[left];
+    strs[left] = strs[start - 1];
+    strs[start - 1] = tmp;
+
+    quick_sort(strs, left, start - 2);
+
+    quick_sort(strs, start, right);
+}
+
 void sort(struct execcmd *ecmd)
 {
-    printf("welcome to use %s!\r\n", ecmd->argv[0]);
+    char lines[LINE_NUM][LINE_LEN];
+    char *plines[LINE_NUM];
+    int num = 0;
+    int argc = 0;
+    int pos;
+
+    /* read at most LINE_NUM lines */
+    while (ecmd->argv[++argc])
+    {
+        while ((num < LINE_NUM) && (readline(ecmd->argv[argc], lines[num])))
+        {
+            plines[num] = lines[num];
+            num++;
+        }
+    }
+
+    quick_sort(plines, 0, num-1);
+
+    for (pos = 0; pos < num; pos++)
+    {
+        if (write(fileno(stdin), plines[pos], LINE_LEN) < 0)
+        {
+            fprintf(stderr, "failed to write %s!\r\n", lines[pos]);
+        }
+    }
 }
 
 void uniq(struct execcmd *ecmd)
