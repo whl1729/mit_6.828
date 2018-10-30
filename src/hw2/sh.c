@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <dirent.h>
 
 // Simplifed xv6 shell.
 
@@ -229,7 +230,24 @@ void grep(struct execcmd *ecmd)
 
 void ls(struct execcmd *ecmd)
 {
-    printf("welcome to use %s!\r\n", ecmd->argv[0]);
+    DIR *dp;
+    struct dirent *ep;
+
+    dp = opendir((ecmd->argv[1] ? ecmd->argv[1] : "./"));
+
+    if (dp != NULL)
+    {
+        while (ep = readdir(dp))
+        {
+            puts(ep->d_name);
+        }
+
+        closedir(dp);
+    }
+    else
+    {
+        fprintf(stderr, "failed to open the directory!\r\n");
+    }
 }
 
 /* algorithm for quick sort:
