@@ -112,7 +112,7 @@ void cat(struct execcmd *ecmd)
                 break;
             }
 
-            num = write(fileno(stdin), buf, num);
+            num = write(fileno(stdout), buf, num);
             if (num < 0)
             {
                 fprintf(stderr, "failed to write %s!\r\n", ecmd->argv[pos]);
@@ -219,7 +219,7 @@ void grep(struct execcmd *ecmd)
         {
             if (issubstr(line, ecmd->argv[1]))
             {
-                if (write(fileno(stdin), line, num) < 0)
+                if (write(fileno(stdout), line, num) < 0)
                 {
                     fprintf(stderr, "failed to write %s!\r\n", line);
                 }
@@ -318,7 +318,7 @@ void sort(struct execcmd *ecmd)
 
     for (pos = 0; pos < num; pos++)
     {
-        if (write(fileno(stdin), plines[pos], LINE_LEN) < 0)
+        if (write(fileno(stdout), plines[pos], LINE_LEN) < 0)
         {
             fprintf(stderr, "failed to write %s!\r\n", lines[pos]);
         }
@@ -458,6 +458,24 @@ runecmd(struct execcmd *ecmd)
     }
 }
 
+void runrcmd(struct redircmd *rcmd)
+{
+    int fd = -1;
+
+    fd = open(rcmd->file, rcmd->flags , 0777);
+    if (fd < 0)
+    {
+        fprintf(stderr, "failed to open %s!\r\n", rcmd->file);
+        return;
+    }
+
+    dup2(fd, rcmd->fd);
+
+    close(fd);
+
+    runecmd((struct execcmd *)rcmd->cmd);
+}
+
 // Execute cmd.  Never returns.
 void
 runcmd(struct cmd *cmd)
@@ -486,9 +504,8 @@ runcmd(struct cmd *cmd)
   case '>':
   case '<':
     rcmd = (struct redircmd*)cmd;
-    fprintf(stderr, "redir not implemented\n");
-    // Your code here ...
-    runcmd(rcmd->cmd);
+
+    runrcmd(rcmd);
     break;
 
   case '|':
