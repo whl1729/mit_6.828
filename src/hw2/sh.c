@@ -13,7 +13,7 @@
 
 #define MAXARGS 10
 #define MAX_CMD_LEN 10
-#define CMD_NUM 6
+#define CMD_NUM 7
 #define BUF_LEN 512
 #define LINE_NUM 1000
 #define LINE_LEN 100
@@ -62,6 +62,7 @@ struct cntinfo {
 int fork1(void);  // Fork but exits on failure.
 struct cmd *parsecmd(char*);
 void cat(struct execcmd * cmd);
+void echo(struct execcmd * cmd);
 void grep(struct execcmd * cmd);
 void ls(struct execcmd * cmd);
 void sort(struct execcmd * cmd);
@@ -73,6 +74,7 @@ char symbols[] = "<|>";
 
 struct ecmdfunc g_func_tbl[CMD_NUM] = {
     {"cat", cat},
+    {"echo", echo},
     {"grep", grep},
     {"ls", ls},
     {"sort", sort},
@@ -87,6 +89,17 @@ void cat(struct execcmd *ecmd)
     int pos = 0;
     int num;
     char buf[BUF_LEN];
+
+    /* read from stdin if there is no input file */
+    if (!ecmd->argv[1])
+    {
+        while ((num = read(fileno(stdin), buf, BUF_LEN)) > 0)
+        {
+            write(fileno(stdout), buf, num);
+        }
+
+        return;
+    }
 
     while (ecmd->argv[++pos])
     {
@@ -122,6 +135,18 @@ void cat(struct execcmd *ecmd)
 
         close(fd);
     }
+}
+
+void echo(struct execcmd *cmd)
+{
+    int argc = 0;
+
+    while (cmd->argv[++argc])
+    {
+        printf("%s ", cmd->argv[argc]);
+    }
+
+    printf("\n");
 }
 
 int issubstr(char *str, char *key)
