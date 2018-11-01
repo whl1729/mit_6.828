@@ -177,7 +177,7 @@ int readline(char *file, char *line)
 
     memset(line, 0, LINE_LEN);
 
-    if (fd <= 0)
+    if ((file) && (fd <= 0))
     {
         fd = open(file, O_RDONLY);
         if (fd < 0)
@@ -201,7 +201,7 @@ int readline(char *file, char *line)
             }
             else if (num < 0)
             {
-                fprintf(stderr, "failed to read %s!\r\n", file);
+                fprintf(stderr, "failed to read %d!\r\n", fd);
                 return ERROR;
             }
 
@@ -234,11 +234,17 @@ int readline(char *file, char *line)
 /* todo: support more options and patterns */
 void grep(struct execcmd *ecmd)
 {
-    int argc = 1; /* ecmd->argv[1] stands for pattern */
     int num;
+    int argc = 2; /* ecmd->argv[1] stands for pattern */
     char line[LINE_LEN];
 
-    while (ecmd->argv[++argc])
+    if (ecmd->argv[1] == NULL)
+    {
+        fprintf(stderr, "not found pattern string!\r\n");
+        return;
+    }
+
+    do
     {
         while ((num = readline(ecmd->argv[argc], line)) > 0)
         {
@@ -250,7 +256,7 @@ void grep(struct execcmd *ecmd)
                 }
             }
         }
-    }
+    } while (ecmd->argv[argc++]);
 }
 
 void ls(struct execcmd *ecmd)
@@ -326,18 +332,18 @@ void sort(struct execcmd *ecmd)
     char lines[LINE_NUM][LINE_LEN];
     char *plines[LINE_NUM];
     int num = 0;
-    int argc = 0;
+    int argc = 1;
     int pos;
 
     /* read at most LINE_NUM lines */
-    while (ecmd->argv[++argc])
+    do
     {
         while ((num < LINE_NUM) && (readline(ecmd->argv[argc], lines[num])))
         {
             plines[num] = lines[num];
             num++;
         }
-    }
+    } while (ecmd->argv[argc++]);
 
     quick_sort(plines, 0, num-1);
 
@@ -382,9 +388,9 @@ void wc(struct execcmd *ecmd)
 {
     struct cntinfo cur;
     struct cntinfo total;
-    int argc = 0;
+    int argc = 1;
     int pos;
-    int fd;
+    int fd = 0;
     int num;
     int start;
     char last;
@@ -392,13 +398,16 @@ void wc(struct execcmd *ecmd)
 
     memset(&total, 0, sizeof(total));
 
-    while (ecmd->argv[++argc])
+    do
     {
-        fd = open(ecmd->argv[argc], O_RDONLY);
-        if (fd < 0)
+        if (ecmd->argv[argc])
         {
-            fprintf(stderr, "failed to open %s!\r\n", ecmd->argv[argc]);
-            continue;
+            fd = open(ecmd->argv[argc], O_RDONLY);
+            if (fd < 0)
+            {
+                fprintf(stderr, "failed to open %s!\r\n", ecmd->argv[argc]);
+                break;
+            }
         }
 
         memset(&cur, 0, sizeof(cur));
@@ -411,12 +420,12 @@ void wc(struct execcmd *ecmd)
             num = read(fd, buf, BUF_LEN);
             if (num == 0)
             {
-                printf("%5d %5d %5d %s\r\n", cur.nline, cur.nword, cur.nbyte, ecmd->argv[argc]);
+                printf("%5d %5d %5d %s\r\n", cur.nline, cur.nword, cur.nbyte, (ecmd->argv[argc] ? ecmd->argv[argc] : ""));
                 break;
             }
             else if (num < 0)
             {
-                printf("failed to read %s!\r\n", ecmd->argv[argc]);
+                printf("failed to read %d!\r\n", fd);
                 break;
             }
 
@@ -455,12 +464,17 @@ void wc(struct execcmd *ecmd)
 
         close(fd);
 
+        fd = -1;
+
         total.nline += cur.nline;
         total.nword += cur.nword;
         total.nbyte += cur.nbyte;
-    }
+    } while (ecmd->argv[argc++]);
     
-    printf("%5d %5d %5d total\r\n", total.nline, total.nword, total.nbyte);
+    if (argc > 2)
+    {
+        printf("%5d %5d %5d total\r\n", total.nline, total.nword, total.nbyte);
+    }
 }
 
 void
@@ -501,6 +515,45 @@ void runrcmd(struct redircmd *rcmd)
     runecmd((struct execcmd *)rcmd->cmd);
 }
 
+void runpcmd(struct pipecmd *pcmd)
+{
+    int fds[2] = {0};
+
+    pipe(fds);
+
+    while ((pcmd->right) && (pcmd->type == '|'))
+    {
+        if (fork() == 0)
+        {
+            close(fds[0]);
+            
+            dup2(fds[1], fileno(stdout));
+
+            runecmd((struct execcmd *)pcmd->left);
+
+            close(fds[1]);
+
+            exit(0);
+        }
+        else
+        {
+            wait(0);
+
+            close(fds[1]);
+
+            dup2(fds[0], fileno(stdin));
+
+            runecmd((struct execcmd *)(pcmd->right->type == '|'? ((struct pipecmd *)pcmd->right)->left : pcmd->right));
+            
+            close(fds[0]);
+
+            pcmd = (struct pipecmd *)pcmd->right;
+
+            break;
+        }
+    }
+}
+
 // Execute cmd.  Never returns.
 void
 runcmd(struct cmd *cmd)
@@ -529,14 +582,12 @@ runcmd(struct cmd *cmd)
   case '>':
   case '<':
     rcmd = (struct redircmd*)cmd;
-
     runrcmd(rcmd);
     break;
 
   case '|':
     pcmd = (struct pipecmd*)cmd;
-    fprintf(stderr, "pipe not implemented\n");
-    // Your code here ...
+    runpcmd(pcmd);
     break;
   }    
   _exit(0);
