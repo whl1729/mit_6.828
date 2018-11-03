@@ -340,6 +340,7 @@ void sort(struct execcmd *ecmd)
     {
         while ((num < LINE_NUM) && (readline(ecmd->argv[argc], lines[num])))
         {
+            //printf("[input]%s\n", lines[num]);
             plines[num] = lines[num];
             num++;
         }
@@ -517,21 +518,54 @@ void runrcmd(struct redircmd *rcmd)
 
 void runpcmd(struct pipecmd *pcmd)
 {
-    int fds[2] = {0};
+    int num;
+    int pos;
+    int id;
+    int *fds;
+    struct execcmd **cmds;
+    struct pipecmd *cur = pcmd;
 
-    pipe(fds);
+    for (num = 1; (cur) && (cur->type == '|'); cur = (struct pipecmd *)cur->right, num++);
 
-    while ((pcmd->right) && (pcmd->type == '|'))
+    /* notice: fds[0], fds[1], fds[2n] and fds[2n+1] act as sentinels */
+    fds = malloc(sizeof(int) * num * 2 + 2);
+    cmds = malloc(sizeof(struct execcmd *) * num);
+
+    if ((!fds) || (!cmds))
+    {
+        fprintf(stderr, "failed to malloc memory for fds or cmds!\n");
+        return;
+    }
+
+    fds[0] = fds[1] = -1;
+    fds[2 * num + 1] = fds[2 * num] = -1;
+
+    cmds[0] = (struct execcmd *)pcmd->left;
+    cur = (struct pipecmd *)pcmd->right;
+
+    for (pos = 1; pos < num; pos++)
+    {
+        pipe(fds + 2 * pos);
+
+        cmds[pos] = ((cur->type == '|')? (struct execcmd *)cur->left : (struct execcmd *)cur);
+        cur = (struct pipecmd *)cur->right;
+    }
+
+    for (pos = 0; pos < num; pos++)
     {
         if (fork() == 0)
         {
-            close(fds[0]);
-            
-            dup2(fds[1], fileno(stdout));
+            dup2(fds[2 * pos], fileno(stdin));
+            dup2(fds[2 * pos + 3], fileno(stdout));
 
-            runecmd((struct execcmd *)pcmd->left);
+            for (id = 0; id <= 2 * pos + 2; id++)
+            {
+                close(fds[id]);
+            }
 
-            close(fds[1]);
+            runecmd(cmds[pos]);
+
+            close(fds[2 * pos + 3]);
 
             exit(0);
         }
@@ -539,17 +573,12 @@ void runpcmd(struct pipecmd *pcmd)
         {
             wait(0);
 
-            close(fds[1]);
+            for (id = 0; id < 2 * pos + 2; id++)
+            {
+                close(fds[id]);
+            }
 
-            dup2(fds[0], fileno(stdin));
-
-            runecmd((struct execcmd *)(pcmd->right->type == '|'? ((struct pipecmd *)pcmd->right)->left : pcmd->right));
-            
-            close(fds[0]);
-
-            pcmd = (struct pipecmd *)pcmd->right;
-
-            break;
+            close(fds[2 * pos + 3]);
         }
     }
 }
