@@ -261,24 +261,30 @@ void grep(struct execcmd *ecmd)
 
 void ls(struct execcmd *ecmd)
 {
+    int len;
     DIR *dp;
     struct dirent *ep;
 
     dp = opendir((ecmd->argv[1] ? ecmd->argv[1] : "./"));
 
-    if (dp != NULL)
-    {
-        while (ep = readdir(dp))
-        {
-            puts(ep->d_name);
-        }
-
-        closedir(dp);
-    }
-    else
+    if (dp == NULL)
     {
         fprintf(stderr, "failed to open the directory!\r\n");
     }
+
+    while (ep = readdir(dp))
+    {
+        len = strlen(ep->d_name);
+        ep->d_name[len++] = '\n';
+        ep->d_name[len] = 0;
+
+        if (write(fileno(stdout), ep->d_name, len) < 0)
+        {
+            fprintf(stderr, "failed to write %s when ls\r\n", ep->d_name);
+        }
+    }
+
+    closedir(dp);
 }
 
 /* algorithm for quick sort:
@@ -563,7 +569,14 @@ void runpcmd(struct pipecmd *pcmd)
                 close(fds[id]);
             }
 
-            runecmd(cmds[pos]);
+            if (cmds[pos]->type == ' ')
+            {
+                runecmd(cmds[pos]);
+            }
+            else
+            {
+                runrcmd((struct redircmd *)cmds[pos]);
+            }
 
             close(fds[2 * pos + 3]);
 
