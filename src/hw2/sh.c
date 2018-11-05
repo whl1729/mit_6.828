@@ -13,7 +13,6 @@
 
 #define MAXARGS 10
 #define MAX_CMD_LEN 10
-#define CMD_NUM 7
 #define BUF_LEN 512
 #define LINE_NUM 1000
 #define LINE_LEN 100
@@ -65,6 +64,7 @@ void cat(struct execcmd * cmd);
 void echo(struct execcmd * cmd);
 void grep(struct execcmd * cmd);
 void ls(struct execcmd * cmd);
+void rm(struct execcmd * cmd);
 void sort(struct execcmd * cmd);
 void uniq(struct execcmd * cmd);
 void wc(struct execcmd * cmd);
@@ -72,11 +72,12 @@ void wc(struct execcmd * cmd);
 char whitespace[] = " \t\r\n\v";
 char symbols[] = "<|>";
 
-struct ecmdfunc g_func_tbl[CMD_NUM] = {
+struct ecmdfunc g_func_tbl[] = {
     {"cat", cat},
     {"echo", echo},
     {"grep", grep},
     {"ls", ls},
+    {"rm", rm},
     {"sort", sort},
     {"uniq", uniq},
     {"wc", wc}
@@ -287,6 +288,20 @@ void ls(struct execcmd *ecmd)
     closedir(dp);
 }
 
+void rm(struct execcmd *ecmd)
+{
+    int argc = 0;
+    int result;
+
+    while (ecmd->argv[++argc])
+    {
+        if (result = remove(ecmd->argv[argc]))
+        {
+            fprintf(stderr, "failed to remove %s! err=%d\r\n", ecmd->argv[argc], result);
+        }
+    }
+}
+
 /* algorithm for quick sort:
  * choose a pivot: p
  * exchange a[0] and a[p]
@@ -401,8 +416,11 @@ void wc(struct execcmd *ecmd)
     int start;
     char last;
     char buf[BUF_LEN];
+    char result[BUF_LEN];
 
     memset(&total, 0, sizeof(total));
+
+    memset(&result, 0, BUF_LEN);
 
     do
     {
@@ -427,7 +445,7 @@ void wc(struct execcmd *ecmd)
 
             if (num == 0)
             {
-                printf("%5d %5d %5d %s\r\n", cur.nline, cur.nword, cur.nbyte, (ecmd->argv[argc] ? ecmd->argv[argc] : ""));
+                sprintf(result + strlen(result), "%5d %5d %5d %s\r\n", cur.nline, cur.nword, cur.nbyte, (ecmd->argv[argc] ? ecmd->argv[argc] : ""));
                 break;
             }
             else if (num < 0)
@@ -480,7 +498,12 @@ void wc(struct execcmd *ecmd)
     
     if (argc > 2)
     {
-        printf("%5d %5d %5d total\r\n", total.nline, total.nword, total.nbyte);
+        sprintf(result + strlen(result), "%5d %5d %5d total\r\n", total.nline, total.nword, total.nbyte);
+    }
+
+    if (write(fileno(stdout), result, strlen(result)) < 0)
+    {
+        fprintf(stderr, "failed to write %s in wc!\r\n", result);
     }
 }
 
@@ -488,8 +511,9 @@ void
 runecmd(struct execcmd *ecmd)
 {
     int pos;
+    int ncmd = sizeof(g_func_tbl) / sizeof(struct ecmdfunc);
 
-    for (pos = 0; pos < CMD_NUM; pos++)
+    for (pos = 0; pos < ncmd; pos++)
     {
         if (0 == strcmp(ecmd->argv[0], g_func_tbl[pos].cmd))
         {
@@ -498,7 +522,7 @@ runecmd(struct execcmd *ecmd)
         }
     }
 
-    if (pos == CMD_NUM)
+    if (pos == ncmd)
     {
         fprintf(stderr, "unknown execcmd\n");
     }
