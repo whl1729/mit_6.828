@@ -329,18 +329,17 @@ void quick_sort(char **strs, int left, int right)
 /* todo: support more options */
 void sort(struct execcmd *ecmd)
 {
-    char lines[LINE_NUM][LINE_LEN];
+    char lines[LINE_NUM][LINE_LEN] = {0};
     char *plines[LINE_NUM];
     int num = 0;
     int argc = 1;
-    int pos;
+    int pos = 0;
 
-    /* read at most LINE_NUM lines */
+    /* read at most LINE_num lines */
     do
     {
-        while ((num < LINE_NUM) && (readline(ecmd->argv[argc], lines[num])))
+        while ((num < LINE_NUM) && (readline(ecmd->argv[argc], lines[num]) > 0))
         {
-            //printf("[input]%s\n", lines[num]);
             plines[num] = lines[num];
             num++;
         }
@@ -350,9 +349,9 @@ void sort(struct execcmd *ecmd)
 
     for (pos = 0; pos < num; pos++)
     {
-        if (write(fileno(stdout), plines[pos], LINE_LEN) < 0)
+        if (write(fileno(stdout), plines[pos], strlen(plines[pos])) < 0)
         {
-            fprintf(stderr, "failed to write %s!\r\n", lines[pos]);
+            fprintf(stderr, "failed to write %s!\r\n", plines[pos]);
         }
     }
 }
@@ -419,6 +418,7 @@ void wc(struct execcmd *ecmd)
             memset(buf, 0, BUF_LEN);
 
             num = read(fd, buf, BUF_LEN);
+
             if (num == 0)
             {
                 printf("%5d %5d %5d %s\r\n", cur.nline, cur.nword, cur.nbyte, (ecmd->argv[argc] ? ecmd->argv[argc] : ""));
